@@ -99,26 +99,27 @@ jobs:
           $lineRate = [double]$coverage.coverage.'line-rate' * 100
           $branchRate = [double]$coverage.coverage.'branch-rate' * 100
 
+          if ($lineRate -ge 80 -and $branchRate -ge 80) {
+            "## ✅ **Coverage threshold passed!**`n`n### Achieved `n**Line $([math]::Round($lineRate, 2))%**`n**Branch $([math]::Round($branchRate, 2))%**" | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          } else {
+            "## ❌ Coverage threshold failed`n`nRequired: line >= 80% and branch >= 80%. Actual: **line $([math]::Round($lineRate, 2))%**, **branch $([math]::Round($branchRate, 2))%**." | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+
           @"
+
           ## Coverage gate
 
           | Metric | Result | Minimum |
           | --- | ---: | ---: |
           | Line coverage | $([math]::Round($lineRate, 2))% | 80% |
           | Branch coverage | $([math]::Round($branchRate, 2))% | 80% |
+         
           "@ | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-
-          if ($lineRate -lt 80 -or $branchRate -lt 80) {
-            "## Coverage threshold failed`n`nRequired: line >= 80% and branch >= 80%. Actual: **line $([math]::Round($lineRate, 2))%**, **branch $([math]::Round($branchRate, 2))%**." | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-          }
 
       - name: Append test execution report
         if: always()
         shell: pwsh
-        run: |
-          Add-Content $env:GITHUB_STEP_SUMMARY '```'
-          Add-Content $env:GITHUB_STEP_SUMMARY "`n## Coverlet Markdown report`n"
-          if (Test-Path artifacts/coverage/Summary.md) { Get-Content artifacts/coverage/Summary.md | Add-Content $env:GITHUB_STEP_SUMMARY } else { Add-Content $env:GITHUB_STEP_SUMMARY 'Coverage report was not generated.' }
+        run: if (Test-Path artifacts/coverage/Summary.md) { Get-Content artifacts/coverage/Summary.md | Add-Content $env:GITHUB_STEP_SUMMARY } else { Add-Content $env:GITHUB_STEP_SUMMARY 'Coverage report was not generated.' }
 
       - name: Upload test and coverage reports
         if: always()

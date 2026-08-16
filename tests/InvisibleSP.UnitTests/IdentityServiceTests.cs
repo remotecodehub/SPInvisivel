@@ -88,7 +88,7 @@ internal sealed class IdentityFixture : IAsyncDisposable
 
     public IdentityService Service => _provider.GetRequiredService<IdentityService>();
     public IJwtTokenService TokenService => _provider.GetRequiredService<IJwtTokenService>();
-    public UserManager<IdentityUser> UserManager => _provider.GetRequiredService<UserManager<IdentityUser>>();
+    public UserManager<User> UserManager => _provider.GetRequiredService<UserManager<User>>();
     public CapturingEmailSender EmailSender { get; }
 
     public static async Task<IdentityFixture> CreateAsync()
@@ -96,8 +96,20 @@ internal sealed class IdentityFixture : IAsyncDisposable
         var emailSender = new CapturingEmailSender();
         var services = new ServiceCollection();
         services.AddLogging();
+
+        // Necessário porque SignInManager<User> depende de IHttpContextAccessor
+        services.AddHttpContextAccessor();
+
+        // Necessário porque SignInManager<User> depende de IAuthenticationSchemeProvider,
+        // que só é registrado quando o pipeline de autenticação é configurado.
+        services.AddAuthentication(options =>
+        {
+            options.DefaultScheme = IdentityConstants.ApplicationScheme;
+        })
+        .AddCookie(IdentityConstants.ApplicationScheme);
+
         services.AddDbContext<InvisibleSPDbContext>(options => options.UseInMemoryDatabase(Guid.NewGuid().ToString("N")));
-        services.AddIdentityCore<IdentityUser>(options =>
+        services.AddIdentityCore<User>(options =>
             {
                 options.User.RequireUniqueEmail = true;
                 options.Password.RequiredLength = 8;
@@ -106,7 +118,8 @@ internal sealed class IdentityFixture : IAsyncDisposable
                 options.Password.RequireLowercase = true;
                 options.Password.RequireNonAlphanumeric = true;
             })
-            .AddRoles<IdentityRole>()
+            .AddRoles<Role>()
+            .AddSignInManager<SignInManager<User>>()
             .AddEntityFrameworkStores<InvisibleSPDbContext>()
             .AddDefaultTokenProviders();
         services.Configure<JwtOptions>(options =>

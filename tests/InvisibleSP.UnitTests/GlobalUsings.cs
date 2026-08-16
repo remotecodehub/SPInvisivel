@@ -12,6 +12,7 @@ global using InvisibleSP.Application.Identity.Handlers;
 global using InvisibleSP.Application.Identity.Requests;
 global using InvisibleSP.Application.Identity.Validators;
 global using InvisibleSP.Application.Pipeline.Validation;
+global using InvisibleSP.Infrastructure.Identity.Models;
 global using InvisibleSP.Infrastructure.Identity.Services;
 global using InvisibleSP.Infrastructure.Persistence;
 global using Mediator.Net.Context;

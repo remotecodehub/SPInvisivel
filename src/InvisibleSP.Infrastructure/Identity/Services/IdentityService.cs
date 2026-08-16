@@ -1,9 +1,9 @@
 namespace InvisibleSP.Infrastructure.Identity.Services;
 
 public sealed class IdentityService(
-    UserManager<IdentityUser> userManager,
-    RoleManager<IdentityRole> roleManager,
-    SignInManager<IdentityUser> signInManager,
+    UserManager<User> userManager,
+    RoleManager<Role> roleManager,
+    SignInManager<User> signInManager,
     IJwtTokenService tokenService,
     IRevokedTokenStore revokedTokenStore,
     IIdentityEmailSender emailSender,
@@ -14,9 +14,12 @@ public sealed class IdentityService(
 
     public async Task<IdentityResultResponse> RegisterAsync(string email, string password, CancellationToken cancellationToken)
     {
-        var user = new IdentityUser(email)
+        var user = new User(email)
         {
             Email = email,
+            DisplayName = "",
+            FirstName = "",
+            SurName = "",
             EmailConfirmed = false
         };
 
@@ -302,7 +305,7 @@ public sealed class IdentityService(
         var role = await roleManager.FindByNameAsync(AdministratorRole);
         if (role is null)
         {
-            role = new IdentityRole(AdministratorRole);
+            role = new Role(AdministratorRole);
             var roleResult = await roleManager.CreateAsync(role);
             if (!roleResult.Succeeded)
             {
@@ -316,7 +319,7 @@ public sealed class IdentityService(
             }
         }
 
-        var user = new IdentityUser(email)
+        var user = new User(email)
         {
             Email = email,
             EmailConfirmed = true
@@ -338,7 +341,7 @@ public sealed class IdentityService(
         return IdentityResultResponse.Success();
     }
 
-    private async Task<TokenResponse> CreateUserTokensAsync(IdentityUser user, CancellationToken cancellationToken)
+    private async Task<TokenResponse> CreateUserTokensAsync(User user, CancellationToken cancellationToken)
     {
         var roles = await userManager.GetRolesAsync(user);
         var claims = await userManager.GetClaimsAsync(user);
