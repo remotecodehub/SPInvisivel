@@ -8,9 +8,9 @@
   <Target Name="GenerateXmlDocumentation"
           AfterTargets="CoreCompile"
           Condition="'$(Configuration)' == 'Release' and '$(IsTestProject)' != 'true' and '$(GenerateDocumentationFile)' == 'true'">
-    <MakeDir Directories="$(MSBuildProjectDirectory)/../../docs-gen" />
+    <MakeDir Directories="$(MSBuildThisFileDirectory)docs-gen" />
     <Copy SourceFiles="$(DocumentationFile)"
-          DestinationFiles="$(MSBuildProjectDirectory)/../../docs-gen/$(AssemblyName).xml"
+          DestinationFiles="$(MSBuildThisFileDirectory)docs-gen/$(AssemblyName).xml"
           SkipUnchangedFiles="true" />
   </Target>
 
