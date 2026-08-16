@@ -7,5 +7,7 @@ global using FluentValidation;
 global using Mediator.Net;
 global using Mediator.Net.Context;
 global using Mediator.Net.Contracts;
+global using Mediator.Net.Pipeline;
 global using InvisibleSP.Application.Common.Identity;
+global using InvisibleSP.Application.Identity;
 global using InvisibleSP.Application.Identity.Requests;
