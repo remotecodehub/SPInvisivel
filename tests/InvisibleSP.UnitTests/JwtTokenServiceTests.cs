@@ -1,7 +1,9 @@
 namespace InvisibleSP.UnitTests;
 
+/// <summary>Verifies JWT creation, validation, metadata, and revocation behavior.</summary>
 public sealed class JwtTokenServiceTests
 {
+    /// <summary>Verifies that an undersized signing secret is rejected.</summary>
     [Fact]
     public void Token_service_should_reject_invalid_secret_length()
     {
@@ -12,6 +14,7 @@ public sealed class JwtTokenServiceTests
         action.Should().Throw<InvalidOperationException>();
     }
 
+    /// <summary>Verifies that revoked token entries remain active until expiration and are then removed.</summary>
     [Fact]
     public void Revoked_token_store_should_expire_entries()
     {
@@ -23,16 +26,13 @@ public sealed class JwtTokenServiceTests
         store.IsRevoked("missing").Should().BeFalse();
     }
 
+    /// <summary>Verifies that token claims and metadata survive a create-and-validate round trip.</summary>
     [Fact]
     public void Token_service_should_round_trip_claims_and_metadata()
     {
         var store = new RevokedTokenStore();
         var service = CreateService(store);
-        var tokens = service.CreateTokens(
-            "user-id",
-            "user@example.com",
-            ["Administrator"],
-            [new Claim(IdentityClaimTypes.Permission, "system.admin")]);
+        var tokens = service.CreateTokens("user-id", "user@example.com", ["Administrator"], [new Claim(IdentityClaimTypes.Permission, "system.admin")]);
 
         var principal = service.ValidateToken(tokens.AccessToken);
         principal.Should().NotBeNull();
@@ -46,6 +46,7 @@ public sealed class JwtTokenServiceTests
         service.GetExpiration("not-a-token").Should().BeNull();
     }
 
+    /// <summary>Verifies that a revoked access token cannot be validated.</summary>
     [Fact]
     public void Token_service_should_reject_a_revoked_token()
     {
