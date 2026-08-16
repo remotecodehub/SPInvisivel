@@ -10,6 +10,12 @@ public static class IdentityPolicies
     public const string Administrator = "administrator";
 }
 
+public static class JwtTokenTypes
+{
+    public const string Access = "access";
+    public const string Refresh = "refresh";
+}
+
 public sealed record Response<T>(bool Succeeded, T? Data, IReadOnlyCollection<string> Errors) : IResponse
 {
     public static Response<T> Success(T data) => new(true, data, Array.Empty<string>());
