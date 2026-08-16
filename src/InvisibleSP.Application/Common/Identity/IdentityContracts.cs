@@ -10,11 +10,18 @@ public static class IdentityPolicies
     public const string Administrator = "administrator";
 }
 
+public sealed record Response<T>(bool Succeeded, T? Data, IReadOnlyCollection<string> Errors) : IResponse
+{
+    public static Response<T> Success(T data) => new(true, data, Array.Empty<string>());
+
+    public static Response<T> Failure(IEnumerable<string> errors) => new(false, default, errors.ToArray());
+}
+
 public sealed record TokenResponse(
     string TokenType,
     string AccessToken,
     int ExpiresIn,
-    string RefreshToken) : IResponse;
+    string RefreshToken);
 
 public sealed record IdentityResultResponse(bool Succeeded, IReadOnlyCollection<string> Errors) : IResponse
 {
@@ -24,15 +31,13 @@ public sealed record IdentityResultResponse(bool Succeeded, IReadOnlyCollection<
         new(false, errors.ToArray());
 }
 
-public sealed record BoolResponse(bool Value) : IResponse;
-
-public sealed record IdentityInfoResponse(string Email, bool IsEmailConfirmed) : IResponse;
+public sealed record IdentityInfoResponse(string Email, bool IsEmailConfirmed);
 
 public sealed record TwoFactorResponse(
     string? SharedKey,
     int RecoveryCodesLeft,
     IReadOnlyCollection<string>? RecoveryCodes,
     bool IsTwoFactorEnabled,
-    bool IsMachineRemembered) : IResponse;
+    bool IsMachineRemembered);
 
 public sealed record SetupStatusResponse(bool IsSetupRequired, bool IsSetupComplete) : IResponse;
