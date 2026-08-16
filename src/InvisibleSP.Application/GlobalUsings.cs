@@ -5,4 +5,6 @@ global using System.Threading;
 global using System.Threading.Tasks;
 global using FluentValidation;
 global using Mediator.Net;
+global using Mediator.Net.Context;
 global using Mediator.Net.Contracts;
+global using InvisibleSP.Application.Common.Identity;
