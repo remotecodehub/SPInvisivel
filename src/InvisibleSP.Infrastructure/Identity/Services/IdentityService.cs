@@ -80,12 +80,17 @@ public sealed class IdentityService(
     public async Task<TokenResponse?> RefreshAsync(string refreshToken, CancellationToken cancellationToken)
     {
         var principal = tokenService.ValidateToken(refreshToken);
-        if (principal is null || !string.Equals(principal.FindFirstValue(JwtRegisteredClaimNames.Typ), "refresh", StringComparison.Ordinal))
+        if (principal is null || !string.Equals(principal.FindFirstValue("token_type"), JwtTokenTypes.Refresh, StringComparison.Ordinal))
         {
             return null;
         }
 
         var userId = principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
+
         if (string.IsNullOrWhiteSpace(userId))
         {
             return null;
