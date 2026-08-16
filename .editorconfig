@@ -32,6 +32,16 @@ csharp_prefer_system_threading_lock = true:suggestion
 # IDE0005 also keeps the centralized import set free of unused directives.
 dotnet_diagnostic.IDE0005.severity = error
 
+# Public API documentation is mandatory. Every public member must document its
+# summary, parameters, generic parameters, exceptions, and relevant remarks.
+dotnet_diagnostic.CS1591.severity = warning
+dotnet_diagnostic.CS1572.severity = warning
+dotnet_diagnostic.CS1573.severity = warning
+dotnet_diagnostic.CS1712.severity = warning
+dotnet_diagnostic.CS1574.severity = warning
+dotnet_diagnostic.CS1587.severity = warning
+dotnet_diagnostic.CS1591.severity = warning
+
 [*.csproj]
 dotnet_diagnostic.IDE0055.severity = error
 
