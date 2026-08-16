@@ -7,8 +7,8 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenS
     public TokenResponse CreateTokens(string userId, string email, IEnumerable<string> roles, IEnumerable<Claim> claims)
     {
         var now = DateTimeOffset.UtcNow;
-        var access = CreateToken(userId, email, roles, claims, "access", now, _options.AccessTokenLifetime);
-        var refresh = CreateToken(userId, email, roles, Array.Empty<Claim>(), "refresh", now, _options.RefreshTokenLifetime);
+        var access = CreateToken(userId, email, roles, claims, JwtTokenTypes.Access, now, _options.AccessTokenLifetime);
+        var refresh = CreateToken(userId, email, roles, Array.Empty<Claim>(), JwtTokenTypes.Refresh, now, _options.RefreshTokenLifetime);
 
         return new TokenResponse(
             "Bearer",
@@ -96,7 +96,7 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenS
             new(JwtRegisteredClaimNames.Sub, userId),
             new(JwtRegisteredClaimNames.Email, email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
-            new(JwtRegisteredClaimNames.Typ, tokenType)
+            new("token_type", tokenType)
         };
 
         tokenClaims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
