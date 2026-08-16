@@ -11,6 +11,7 @@ global using InvisibleSP.Application.Identity.Handlers;
 global using InvisibleSP.Application.Identity.Requests;
 global using InvisibleSP.Application.Identity.Validators;
 global using InvisibleSP.Infrastructure.Identity;
+global using Mediator.Net.Context;
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.DependencyInjection;
