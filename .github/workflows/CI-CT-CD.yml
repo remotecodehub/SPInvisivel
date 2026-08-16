@@ -61,6 +61,15 @@ jobs:
           "dotnet test exit code: $exitCode" | Add-Content -Path $outputFile
           "TEST_EXIT_CODE=$exitCode" | Out-File -FilePath artifacts/test-exit-code.txt -Encoding utf8
 
+           - name: Publish Test Summary
+   
+      - uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: 'Continuous Test Results'
+          path: ${{ github.workspace }}/artifacts/test-results/*.trx
+          reporter: 'dotnet-trx'
+
       - name: Generate coverage report
         if: always()
         shell: pwsh
@@ -108,9 +117,6 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          Add-Content $env:GITHUB_STEP_SUMMARY "`n## Test execution report`n"
-          Add-Content $env:GITHUB_STEP_SUMMARY '```text'
-          if (Test-Path artifacts/test-output.txt) { Get-Content artifacts/test-output.txt | Add-Content $env:GITHUB_STEP_SUMMARY } else { Add-Content $env:GITHUB_STEP_SUMMARY 'Test output was not generated.' }
           Add-Content $env:GITHUB_STEP_SUMMARY '```'
           Add-Content $env:GITHUB_STEP_SUMMARY "`n## Coverlet Markdown report`n"
           if (Test-Path artifacts/coverage/Summary.md) { Get-Content artifacts/coverage/Summary.md | Add-Content $env:GITHUB_STEP_SUMMARY } else { Add-Content $env:GITHUB_STEP_SUMMARY 'Coverage report was not generated.' }
