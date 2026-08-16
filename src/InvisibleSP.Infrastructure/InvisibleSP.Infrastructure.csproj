@@ -3,6 +3,7 @@
     <ProjectReference Include="..\InvisibleSP.Application\InvisibleSP.Application.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="10.0.10" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
   </ItemGroup>
   <PropertyGroup>
