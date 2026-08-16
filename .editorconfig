@@ -12,7 +12,7 @@ trim_trailing_whitespace = true
 [*.cs]
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
-csharp_using_directive_placement = outside_namespace:csharp_style_namespace_declarations_for_types = file_scoped
+csharp_using_directive_placement = outside_namespace
 csharp_style_namespace_declarations = file_scoped:error
 csharp_new_line_before_members_in_chained_object_initializers = false
 csharp_new_line_before_members_in_object_initializers = false
@@ -27,10 +27,9 @@ csharp_style_expression_bodied_properties = when_on_single_line:suggestion
 csharp_style_expression_bodied_accessors = when_on_single_line:suggestion
 csharp_prefer_simple_using_statement = true:warning
 csharp_prefer_system_threading_lock = true:suggestion
-csharp_using_directive_placement = outside_namespace:error
 
-# Keep imports centralized in the project's root-level GlobalUsings.cs.
-# Local using directives are intentionally treated as errors.
+# GlobalUsings.cs is the only location for project-wide imports.
+# IDE0005 also keeps the centralized import set free of unused directives.
 dotnet_diagnostic.IDE0005.severity = error
 
 [*.csproj]
