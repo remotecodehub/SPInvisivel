@@ -89,6 +89,7 @@ internal sealed class IdentityFixture : IAsyncDisposable
     public IdentityService Service => _provider.GetRequiredService<IdentityService>();
     public IJwtTokenService TokenService => _provider.GetRequiredService<IJwtTokenService>();
     public UserManager<User> UserManager => _provider.GetRequiredService<UserManager<User>>();
+    public RoleManager<Role> RoleManager => _provider.GetRequiredService<RoleManager<Role>>();
     public CapturingEmailSender EmailSender { get; }
 
     public static async Task<IdentityFixture> CreateAsync()
@@ -96,18 +97,9 @@ internal sealed class IdentityFixture : IAsyncDisposable
         var emailSender = new CapturingEmailSender();
         var services = new ServiceCollection();
         services.AddLogging();
-
-        // Necessário porque SignInManager<User> depende de IHttpContextAccessor
         services.AddHttpContextAccessor();
-
-        // Necessário porque SignInManager<User> depende de IAuthenticationSchemeProvider,
-        // que só é registrado quando o pipeline de autenticação é configurado.
-        services.AddAuthentication(options =>
-        {
-            options.DefaultScheme = IdentityConstants.ApplicationScheme;
-        })
-        .AddCookie(IdentityConstants.ApplicationScheme);
-
+        services.AddAuthentication(options => options.DefaultScheme = IdentityConstants.ApplicationScheme)
+            .AddCookie(IdentityConstants.ApplicationScheme);
         services.AddDbContext<InvisibleSPDbContext>(options => options.UseInMemoryDatabase(Guid.NewGuid().ToString("N")));
         services.AddIdentityCore<User>(options =>
             {
