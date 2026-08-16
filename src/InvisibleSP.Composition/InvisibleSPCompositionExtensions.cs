@@ -86,8 +86,8 @@ public static class InvisibleSPCompositionExtensions
             });
 
         services.AddAuthorizationBuilder()
-            .AddPolicy(IdentityPolicies.Setup, policy =>
-                policy.RequireClaim(IdentityClaimTypes.Permission, AdministratorPermissionValue()));
+            .AddPolicy(IdentityPolicies.Administrator, policy =>
+                policy.RequireClaim(IdentityClaimTypes.Permission, AdministratorPermission));
 
         services.AddMediator(mediatorBuilder =>
         {
@@ -127,6 +127,4 @@ public static class InvisibleSPCompositionExtensions
     }
 
     private const string AdministratorPermission = "system.admin";
-
-    private static string AdministratorPermissionValue() => AdministratorPermission;
 }
