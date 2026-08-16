@@ -31,8 +31,21 @@ public sealed class IdentityBranchTests
         await fixture.Service.InitializeSetupAsync("admin@example.com", "Password1!", CancellationToken.None);
         var user = await fixture.UserManager.FindByEmailAsync("admin@example.com");
         user.Should().NotBeNull();
+
         await fixture.UserManager.ResetAuthenticatorKeyAsync(user!);
-        await fixture.UserManager.SetTwoFactorEnabledAsync(user, true);
+        var setupCode = await fixture.UserManager.GenerateTwoFactorTokenAsync(
+            user,
+            fixture.UserManager.Options.Tokens.AuthenticatorTokenProvider);
+        var configured = await fixture.Service.ConfigureTwoFactorAsync(
+            user.Id,
+            true,
+            setupCode,
+            true,
+            false,
+            false,
+            CancellationToken.None);
+        configured.Should().NotBeNull();
+        configured!.IsTwoFactorEnabled.Should().BeTrue();
 
         (await fixture.Service.LoginAsync("admin@example.com", "Password1!", "000000", null, CancellationToken.None)).Should().BeNull();
         (await fixture.Service.LoginAsync("admin@example.com", "Password1!", null, "invalid-recovery-code", CancellationToken.None)).Should().BeNull();
