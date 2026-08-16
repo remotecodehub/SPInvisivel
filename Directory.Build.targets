@@ -1,0 +1,7 @@
+<Project>
+  <Target Name="ValidateGlobalUsings" BeforeTargets="CoreCompile" Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+    <Error
+      Condition="!Exists('$(MSBuildProjectDirectory)/GlobalUsings.cs')"
+      Text="$(MSBuildProjectName): GlobalUsings.cs is required at the project root. Add all project-wide using directives there and do not add using directives to individual source files." />
+  </Target>
+</Project>
