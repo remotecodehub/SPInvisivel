@@ -14,9 +14,9 @@ public sealed record TokenResponse(
     string TokenType,
     string AccessToken,
     int ExpiresIn,
-    string RefreshToken);
+    string RefreshToken) : IResponse;
 
-public sealed record IdentityResultResponse(bool Succeeded, IReadOnlyCollection<string> Errors)
+public sealed record IdentityResultResponse(bool Succeeded, IReadOnlyCollection<string> Errors) : IResponse
 {
     public static IdentityResultResponse Success() => new(true, Array.Empty<string>());
 
@@ -24,13 +24,15 @@ public sealed record IdentityResultResponse(bool Succeeded, IReadOnlyCollection<
         new(false, errors.ToArray());
 }
 
-public sealed record IdentityInfoResponse(string Email, bool IsEmailConfirmed);
+public sealed record BoolResponse(bool Value) : IResponse;
+
+public sealed record IdentityInfoResponse(string Email, bool IsEmailConfirmed) : IResponse;
 
 public sealed record TwoFactorResponse(
     string? SharedKey,
     int RecoveryCodesLeft,
     IReadOnlyCollection<string>? RecoveryCodes,
     bool IsTwoFactorEnabled,
-    bool IsMachineRemembered);
+    bool IsMachineRemembered) : IResponse;
 
-public sealed record SetupStatusResponse(bool IsSetupRequired, bool IsSetupComplete);
+public sealed record SetupStatusResponse(bool IsSetupRequired, bool IsSetupComplete) : IResponse;
