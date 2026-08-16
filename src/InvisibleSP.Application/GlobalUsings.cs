@@ -5,7 +5,6 @@ global using System.Security.Claims;
 global using System.Threading;
 global using System.Threading.Tasks;
 global using FluentValidation;
-global using FluentValidation.DependencyInjectionExtensions;
 global using Mediator.Net;
 global using Mediator.Net.Context;
 global using Mediator.Net.Contracts;
