@@ -1,32 +1,32 @@
 namespace InvisibleSP.Application.Identity.Requests;
 
-public sealed record RegisterCommand(string Email, string Password) : IRequest<IdentityResultResponse>;
+public sealed record RegisterCommand(string Email, string Password) : IRequest;
 
 public sealed record LoginCommand(
     string Email,
     string Password,
     string? TwoFactorCode = null,
-    string? TwoFactorRecoveryCode = null) : IRequest<TokenResponse?>;
+    string? TwoFactorRecoveryCode = null) : IRequest;
 
-public sealed record RefreshTokenCommand(string RefreshToken) : IRequest<TokenResponse?>;
+public sealed record RefreshTokenCommand(string RefreshToken) : IRequest;
 
-public sealed record RevokeTokenCommand(string AccessToken) : IRequest<bool>;
+public sealed record RevokeTokenCommand(string AccessToken) : IRequest;
 
-public sealed record ConfirmEmailCommand(string UserId, string Code, string? ChangedEmail = null) : IRequest<bool>;
+public sealed record ConfirmEmailCommand(string UserId, string Code, string? ChangedEmail = null) : IRequest;
 
-public sealed record ResendConfirmationEmailCommand(string Email) : IRequest<IdentityResultResponse>;
+public sealed record ResendConfirmationEmailCommand(string Email) : IRequest;
 
-public sealed record ForgotPasswordCommand(string Email) : IRequest<IdentityResultResponse>;
+public sealed record ForgotPasswordCommand(string Email) : IRequest;
 
-public sealed record ResetPasswordCommand(string Email, string ResetCode, string NewPassword) : IRequest<IdentityResultResponse>;
+public sealed record ResetPasswordCommand(string Email, string ResetCode, string NewPassword) : IRequest;
 
-public sealed record GetIdentityInfoQuery(string UserId) : IRequest<IdentityInfoResponse?>;
+public sealed record GetIdentityInfoQuery(string UserId) : IRequest;
 
 public sealed record UpdateIdentityInfoCommand(
     string UserId,
     string? NewEmail,
     string? NewPassword,
-    string OldPassword) : IRequest<IdentityResultResponse>;
+    string OldPassword) : IRequest;
 
 public sealed record ConfigureTwoFactorCommand(
     string UserId,
@@ -34,8 +34,8 @@ public sealed record ConfigureTwoFactorCommand(
     string? TwoFactorCode,
     bool ResetRecoveryCodes,
     bool ResetSharedKey,
-    bool ForgetMachine) : IRequest<TwoFactorResponse?>;
+    bool ForgetMachine) : IRequest;
 
-public sealed record GetSetupStatusQuery : IRequest<SetupStatusResponse>;
+public sealed record GetSetupStatusQuery : IRequest;
 
-public sealed record InitializeSetupCommand(string Email, string Password) : IRequest<IdentityResultResponse>;
+public sealed record InitializeSetupCommand(string Email, string Password) : IRequest;
