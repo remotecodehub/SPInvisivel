@@ -1,4 +1,4 @@
-namespace InvisibleSP.Infrastructure.Identity;
+namespace InvisibleSP.Infrastructure.Identity.Services;
 
 public sealed class IdentityService(
     UserManager<IdentityUser> userManager,

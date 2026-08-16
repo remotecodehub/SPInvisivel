@@ -11,6 +11,7 @@ global using System.Threading.Tasks;
 global using InvisibleSP.Application.Common.Identity;
 global using InvisibleSP.Application.Identity;
 global using InvisibleSP.Domain.Common;
+global using InvisibleSP.Infrastructure.Identity.Models;
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore;

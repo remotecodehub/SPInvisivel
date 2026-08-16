@@ -1,22 +1,26 @@
 namespace InvisibleSP.Composition;
-
+/// <summary>
+/// Provides extension methods for configuring the InvisibleSP application.
+/// </summary>
 public static class InvisibleSPCompositionExtensions
 {
-    public static WebApplicationBuilder AddInvisibleSP(this WebApplicationBuilder builder)
+    extension (WebApplicationBuilder builder)
     {
-        var services = builder.Services;
-        var configuration = builder.Configuration;
+        public WebApplicationBuilder AddInvisibleSP()
+        {
+            var services = builder.Services;
+            var configuration = builder.Configuration;
 
-        services.AddRazorComponents()
-            .AddInteractiveServerComponents();
-        services.AddControllers();
+            services.AddRazorComponents()
+                .AddInteractiveServerComponents();
+            services.AddControllers();
 
-        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+            services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
 
-        services.AddDbContext<InvisibleIdentityDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("Identity")));
+            services.AddDbContext<InvisibleSPDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("Identity")));
 
-        services.AddIdentityCore<IdentityUser>(options =>
+            services.AddIdentityCore<IdentityUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;
                 options.SignIn.RequireConfirmedEmail = false;
@@ -27,103 +31,110 @@ public static class InvisibleSPCompositionExtensions
                 options.Password.RequireNonAlphanumeric = true;
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-            })
-            .AddRoles<IdentityRole>()
-            .AddEntityFrameworkStores<InvisibleIdentityDbContext>()
-            .AddSignInManager()
-            .AddDefaultTokenProviders();
+            }).AddRoles<IdentityRole>()
+                .AddEntityFrameworkStores<InvisibleSPDbContext>()
+                .AddSignInManager()
+                .AddDefaultTokenProviders();
 
-        services.AddScoped<IIdentityService, IdentityService>();
-        services.AddScoped<IMessageValidator, FluentMessageValidator>();
-        services.AddSingleton<IRevokedTokenStore, RevokedTokenStore>();
-        services.AddScoped<IJwtTokenService, JwtTokenService>();
-        services.AddScoped<IIdentityEmailSender, LoggingIdentityEmailSender>();
-        services.AddValidatorsFromAssemblyContaining<RegisterCommandValidator>();
+            services.AddScoped<IIdentityService, IdentityService>();
+            services.AddScoped<IMessageValidator, FluentMessageValidator>();
+            services.AddSingleton<IRevokedTokenStore, RevokedTokenStore>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddScoped<IIdentityEmailSender, LoggingIdentityEmailSender>();
+            services.AddValidatorsFromAssemblyContaining<RegisterCommandValidator>();
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
-                    ?? throw new InvalidOperationException("JWT configuration is missing.");
-
-                if (Encoding.UTF8.GetByteCount(jwt.SecretKey) < 32)
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
                 {
-                    throw new InvalidOperationException("Authentication:Jwt:SecretKey must contain at least 256 bits.");
-                }
+                    var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
+                        ?? throw new InvalidOperationException("JWT configuration is missing.");
 
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey)),
-                    ValidateIssuer = true,
-                    ValidIssuer = jwt.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = jwt.Audience,
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.FromSeconds(30)
-                };
-
-                options.Events = new JwtBearerEvents
-                {
-                    OnTokenValidated = context =>
+                    if (Encoding.UTF8.GetByteCount(jwt.SecretKey) < 32)
                     {
-                        var token = context.SecurityToken as JwtSecurityToken;
-                        var tokenType = token?.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Typ)?.Value;
-                        if (!string.Equals(tokenType, "access", StringComparison.Ordinal))
+                        throw new InvalidOperationException("Authentication:Jwt:SecretKey must contain at least 256 bits.");
+                    }
+
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey)),
+                        ValidateIssuer = true,
+                        ValidIssuer = jwt.Issuer,
+                        ValidateAudience = true,
+                        ValidAudience = jwt.Audience,
+                        ValidateLifetime = true,
+                        ClockSkew = TimeSpan.FromSeconds(30)
+                    };
+
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = context =>
                         {
-                            context.Fail("The supplied token is not an access token.");
+                            var token = context.SecurityToken as JwtSecurityToken;
+                            var tokenType = token?.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Typ)?.Value;
+                            if (!string.Equals(tokenType, "access", StringComparison.Ordinal))
+                            {
+                                context.Fail("The supplied token is not an access token.");
+                                return Task.CompletedTask;
+                            }
+
+                            if (token is not null && context.HttpContext.RequestServices.GetRequiredService<IRevokedTokenStore>().IsRevoked(token.Id))
+                            {
+                                context.Fail("The supplied token has been revoked.");
+                            }
+
                             return Task.CompletedTask;
                         }
+                    };
+                });
 
-                        if (token is not null && context.HttpContext.RequestServices.GetRequiredService<IRevokedTokenStore>().IsRevoked(token.Id))
-                        {
-                            context.Fail("The supplied token has been revoked.");
-                        }
-
-                        return Task.CompletedTask;
-                    }
-                };
-            });
-
-        services.AddAuthorizationBuilder()
-            .AddPolicy(IdentityPolicies.Administrator, policy =>
-                policy.RequireClaim(IdentityClaimTypes.Permission, AdministratorPermission));
-
-        services.AddMediator(mediatorBuilder =>
-        {
-            mediatorBuilder
-                .RegisterHandlers(typeof(RegisterCommandHandler).Assembly)
+            services.AddAuthorizationBuilder()
+                .AddPolicy(IdentityPolicies.Administrator, policy =>
+                    policy.RequireClaim(IdentityClaimTypes.Permission, AdministratorPermission));
+            var mb = new Mediator.Net.MediatorBuilder();
+            mb.RegisterHandlers(typeof(RegisterCommandHandler).Assembly)
                 .ConfigureCommandReceivePipe(pipe => pipe.UseValidation())
                 .ConfigureRequestPipe(pipe => pipe.UseValidation());
-        });
 
-        return builder;
+            services.RegisterMediator(mb);
+
+            return builder;
+        }
     }
 
-    public static WebApplication UseInvisibleSP(this WebApplication app)
+
+    extension (WebApplication app)
     {
-        if (!app.Environment.IsDevelopment())
+        /// <summary>
+        /// Configures the InvisibleSP application with necessary middleware and routing.
+        /// </summary>
+        /// <typeparam name="TApp">An <see cref="IComponent"/> that is the App.razor of the application</typeparam>
+        /// <returns></returns>
+        public WebApplication UseInvisibleSP<TApp>() where TApp : IComponent
         {
-            app.UseExceptionHandler("/Error", createScopeForErrors: true);
-            app.UseHsts();
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseExceptionHandler("/Error", createScopeForErrors: true);
+                app.UseHsts();
+            }
+            else
+            {
+                app.UseDeveloperExceptionPage();
+            }
+
+            app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+            app.UseHttpsRedirection();
+            app.UseAuthentication();
+            app.UseAuthorization();
+            app.UseAntiforgery();
+
+            app.MapControllers();
+            app.MapStaticAssets();
+            app.MapRazorComponents<TApp>()
+                .AddInteractiveServerRenderMode();
+
+            return app;
         }
-        else
-        {
-            app.UseDeveloperExceptionPage();
-        }
-
-        app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-        app.UseHttpsRedirection();
-        app.UseAuthentication();
-        app.UseAuthorization();
-        app.UseAntiforgery();
-
-        app.MapControllers();
-        app.MapStaticAssets();
-        app.MapRazorComponents<InvisibleSP.Components.App>()
-            .AddInteractiveServerRenderMode();
-
-        return app;
     }
 
     private const string AdministratorPermission = "system.admin";

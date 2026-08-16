@@ -1,4 +1,4 @@
-namespace InvisibleSP.Infrastructure.Identity;
+namespace InvisibleSP.Infrastructure.Identity.Services;
 
 public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenStore revokedTokens) : IJwtTokenService
 {

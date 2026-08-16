@@ -485,3 +485,5 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+/workload-install.ps1
+/workload-install.ps1

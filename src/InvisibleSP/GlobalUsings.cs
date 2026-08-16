@@ -6,6 +6,8 @@ global using System.Threading.Tasks;
 global using InvisibleSP.Application.Common.Identity;
 global using InvisibleSP.Application.Identity.Requests;
 global using InvisibleSP.Composition;
+global using InvisibleSP.Components;
 global using Mediator.Net;
 global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.AspNetCore.Builder;
 global using Microsoft.AspNetCore.Mvc;

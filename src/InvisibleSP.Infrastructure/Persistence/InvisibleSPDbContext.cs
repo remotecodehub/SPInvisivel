@@ -1,8 +1,14 @@
-namespace InvisibleSP.Infrastructure.Identity;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
-public sealed class InvisibleIdentityDbContext(
-    DbContextOptions<InvisibleIdentityDbContext> options) : IdentityDbContext<IdentityUser, IdentityRole, string>(options)
+namespace InvisibleSP.Infrastructure.Persistence;
+
+/// <summary>
+/// Represents the database context for the InvisibleSP application.
+/// </summary>
+public sealed class InvisibleSPDbContext(
+    DbContextOptions<InvisibleSPDbContext> options) : IdentityDbContext<User, Role, string>(options)
 {
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -19,20 +25,24 @@ public sealed class InvisibleIdentityDbContext(
             var filter = Expression.Lambda(Expression.Not(property), parameter);
             builder.Entity(entityType.ClrType).HasQueryFilter(filter);
         }
+        builder.ApplyConfigurationsFromAssembly(typeof(InvisibleSPDbContext).Assembly);
     }
 
+    /// <inheritdoc />
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         ApplySoftDelete();
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
+    /// <inheritdoc />
     public override int SaveChanges()
     {
         ApplySoftDelete();
         return base.SaveChanges();
     }
 
+    /// <inheritdoc />
     public override Task<int> SaveChangesAsync(
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
@@ -41,6 +51,7 @@ public sealed class InvisibleIdentityDbContext(
         return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 
+    /// <inheritdoc />
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         ApplySoftDelete();
@@ -49,7 +60,7 @@ public sealed class InvisibleIdentityDbContext(
 
     private void ApplySoftDelete()
     {
-        foreach (var entry in ChangeTracker.Entries<ISoftDeletable>())
+        foreach (EntityEntry<ISoftDeletable> entry in ChangeTracker.Entries<ISoftDeletable>())
         {
             if (entry.State != EntityState.Deleted)
             {

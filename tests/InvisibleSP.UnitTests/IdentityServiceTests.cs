@@ -96,7 +96,7 @@ internal sealed class IdentityFixture : IAsyncDisposable
         var emailSender = new CapturingEmailSender();
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<InvisibleIdentityDbContext>(options => options.UseInMemoryDatabase(Guid.NewGuid().ToString("N")));
+        services.AddDbContext<InvisibleSPDbContext>(options => options.UseInMemoryDatabase(Guid.NewGuid().ToString("N")));
         services.AddIdentityCore<IdentityUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;
@@ -107,7 +107,7 @@ internal sealed class IdentityFixture : IAsyncDisposable
                 options.Password.RequireNonAlphanumeric = true;
             })
             .AddRoles<IdentityRole>()
-            .AddEntityFrameworkStores<InvisibleIdentityDbContext>()
+            .AddEntityFrameworkStores<InvisibleSPDbContext>()
             .AddDefaultTokenProviders();
         services.Configure<JwtOptions>(options =>
         {
@@ -122,7 +122,7 @@ internal sealed class IdentityFixture : IAsyncDisposable
         services.AddSingleton<IIdentityEmailSender>(emailSender);
         services.AddScoped<IdentityService>();
         var provider = services.BuildServiceProvider();
-        await provider.GetRequiredService<InvisibleIdentityDbContext>().Database.EnsureCreatedAsync();
+        await provider.GetRequiredService<InvisibleSPDbContext>().Database.EnsureCreatedAsync();
         return new IdentityFixture(provider, emailSender);
     }
 
