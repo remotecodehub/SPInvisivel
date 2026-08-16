@@ -7,7 +7,7 @@ public static class IdentityClaimTypes
 
 public static class IdentityPolicies
 {
-    public const string Setup = "setup";
+    public const string Administrator = "administrator";
 }
 
 public sealed record TokenResponse(
