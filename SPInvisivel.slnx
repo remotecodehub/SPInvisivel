@@ -6,4 +6,7 @@
     <Project Path="src/InvisibleSP.Infrastructure/InvisibleSP.Infrastructure.csproj" />
     <Project Path="src/InvisibleSP/InvisibleSP.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/InvisibleSP.UnitTests/InvisibleSP.UnitTests.csproj" />
+  </Folder>
 </Solution>
