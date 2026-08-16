@@ -60,11 +60,13 @@ Preferred:
 ```text
 InvisibleSP.Application/
   Identity/
+    Abstractions/
     Commands/
-    Queries/
     Handlers/
-    Validators/
+    Queries/
+    Requests/
     Responses/
+    Validators/
 ```
 
 Avoid structures such as a single solution-wide `Services/`, `Repositories/`, `Handlers/`, or `Models/` directory that mixes unrelated features.
