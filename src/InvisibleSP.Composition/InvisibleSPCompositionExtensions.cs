@@ -1,0 +1,132 @@
+namespace InvisibleSP.Composition;
+
+public static class InvisibleSPCompositionExtensions
+{
+    public static WebApplicationBuilder AddInvisibleSP(this WebApplicationBuilder builder)
+    {
+        var services = builder.Services;
+        var configuration = builder.Configuration;
+
+        services.AddRazorComponents()
+            .AddInteractiveServerComponents();
+        services.AddControllers();
+
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+
+        services.AddDbContext<InvisibleIdentityDbContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString("Identity")));
+
+        services.AddIdentityCore<IdentityUser>(options =>
+            {
+                options.User.RequireUniqueEmail = true;
+                options.SignIn.RequireConfirmedEmail = false;
+                options.Password.RequiredLength = 8;
+                options.Password.RequireDigit = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+            })
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<InvisibleIdentityDbContext>()
+            .AddSignInManager()
+            .AddDefaultTokenProviders();
+
+        services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IMessageValidator, FluentMessageValidator>();
+        services.AddSingleton<IRevokedTokenStore, RevokedTokenStore>();
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IIdentityEmailSender, LoggingIdentityEmailSender>();
+        services.AddValidatorsFromAssemblyContaining<RegisterCommandValidator>();
+
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
+                    ?? throw new InvalidOperationException("JWT configuration is missing.");
+
+                if (Encoding.UTF8.GetByteCount(jwt.SecretKey) < 32)
+                {
+                    throw new InvalidOperationException("Authentication:Jwt:SecretKey must contain at least 256 bits.");
+                }
+
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey)),
+                    ValidateIssuer = true,
+                    ValidIssuer = jwt.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwt.Audience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromSeconds(30)
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        var token = context.SecurityToken as JwtSecurityToken;
+                        var tokenType = token?.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Typ)?.Value;
+                        if (!string.Equals(tokenType, "access", StringComparison.Ordinal))
+                        {
+                            context.Fail("The supplied token is not an access token.");
+                            return Task.CompletedTask;
+                        }
+
+                        if (token is not null && context.HttpContext.RequestServices.GetRequiredService<IRevokedTokenStore>().IsRevoked(token.Id))
+                        {
+                            context.Fail("The supplied token has been revoked.");
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
+            });
+
+        services.AddAuthorizationBuilder()
+            .AddPolicy(IdentityPolicies.Setup, policy =>
+                policy.RequireClaim(IdentityClaimTypes.Permission, AdministratorPermissionValue()));
+
+        services.AddMediator(mediatorBuilder =>
+        {
+            mediatorBuilder
+                .RegisterHandlers(typeof(RegisterCommandHandler).Assembly)
+                .ConfigureCommandReceivePipe(pipe => pipe.UseValidation())
+                .ConfigureRequestPipe(pipe => pipe.UseValidation());
+        });
+
+        return builder;
+    }
+
+    public static WebApplication UseInvisibleSP(this WebApplication app)
+    {
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseExceptionHandler("/Error", createScopeForErrors: true);
+            app.UseHsts();
+        }
+        else
+        {
+            app.UseDeveloperExceptionPage();
+        }
+
+        app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+        app.UseHttpsRedirection();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.UseAntiforgery();
+
+        app.MapControllers();
+        app.MapStaticAssets();
+        app.MapRazorComponents<InvisibleSP.Components.App>()
+            .AddInteractiveServerRenderMode();
+
+        return app;
+    }
+
+    private const string AdministratorPermission = "system.admin";
+
+    private static string AdministratorPermissionValue() => AdministratorPermission;
+}
