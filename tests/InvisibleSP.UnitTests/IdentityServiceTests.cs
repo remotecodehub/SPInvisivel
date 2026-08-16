@@ -1,7 +1,10 @@
 namespace InvisibleSP.UnitTests;
 
+/// <summary>Verifies end-to-end identity service workflows using the test Identity infrastructure.</summary>
 public sealed class IdentityServiceTests
 {
+    /// <summary>Verifies initial setup, administrator claims, refresh-token rotation, and access-token revocation.</summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task Setup_should_create_administrator_and_issue_revocable_tokens()
     {
@@ -31,6 +34,8 @@ public sealed class IdentityServiceTests
         fixture.TokenService.ValidateToken(refreshed.AccessToken).Should().BeNull();
     }
 
+    /// <summary>Verifies registration, email confirmation, password recovery, password reset, and subsequent login.</summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task Registration_confirmation_and_password_reset_should_work()
     {
@@ -54,6 +59,8 @@ public sealed class IdentityServiceTests
         login.Should().NotBeNull();
     }
 
+    /// <summary>Verifies that email and password changes require the current password.</summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task Update_info_should_change_email_and_password_after_current_password_validation()
     {
