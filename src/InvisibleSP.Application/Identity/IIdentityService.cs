@@ -1,7 +1,5 @@
 namespace InvisibleSP.Application.Identity;
 
-using InvisibleSP.Application.Common.Identity;
-
 public interface IIdentityService
 {
     Task<IdentityResultResponse> RegisterAsync(string email, string password, CancellationToken cancellationToken);
