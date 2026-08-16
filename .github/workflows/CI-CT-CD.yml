@@ -18,15 +18,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.*
-
       - name: Restore
         run: dotnet restore SPInvisivel.slnx
-
       - name: Build
         run: dotnet build SPInvisivel.slnx --configuration Release --no-restore
 
@@ -38,52 +35,56 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.*
-
       - name: Restore
         run: dotnet restore ${{ github.workspace }}/tests/InvisibleSP.UnitTests/InvisibleSP.UnitTests.csproj
-
       - name: Install ReportGenerator
         run: dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.5.11
 
       - name: Test with Coverlet
-        shell: pwsh 
+        id: test
+        shell: pwsh
+        continue-on-error: true
         run: |
-          dotnet test ${{ github.workspace }}/tests/InvisibleSP.UnitTests/InvisibleSP.UnitTests.csproj `
+          New-Item -ItemType Directory -Force -Path artifacts/test-results | Out-Null
+          $outputFile = Join-Path $env:GITHUB_WORKSPACE 'artifacts/test-output.txt'
+          & dotnet test $env:GITHUB_WORKSPACE/tests/InvisibleSP.UnitTests/InvisibleSP.UnitTests.csproj `
             --configuration Release `
             --no-restore `
             --collect:"XPlat Code Coverage" `
-            --results-directory artifacts/test-results `
-            --logger "trx;LogFileName=test-results.trx" 2>&1 | Tee-Object artifacts/test-output.txt
+            --results-directory $env:GITHUB_WORKSPACE/artifacts/test-results `
+            --logger "trx;LogFileName=test-results.trx" 2>&1 | Tee-Object -FilePath $outputFile
+          $exitCode = $LASTEXITCODE
+          "dotnet test exit code: $exitCode" | Add-Content -Path $outputFile
+          "TEST_EXIT_CODE=$exitCode" | Out-File -FilePath artifacts/test-exit-code.txt -Encoding utf8
 
-          if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-          }
-      
       - name: Generate coverage report
+        if: always()
         shell: pwsh
         run: |
-          reportgenerator `
-            -reports:"artifacts/test-results/**/coverage.cobertura.xml" `
-            -targetdir:"artifacts/coverage" `
-            -reporttypes:"MarkdownSummary;Cobertura"
+          New-Item -ItemType Directory -Force -Path artifacts/coverage | Out-Null
+          $coverageFiles = @(Get-ChildItem -Path artifacts/test-results -Filter coverage.cobertura.xml -Recurse -ErrorAction SilentlyContinue)
+          if ($coverageFiles.Count -gt 0) {
+            reportgenerator -reports:"artifacts/test-results/**/coverage.cobertura.xml" -targetdir:"artifacts/coverage" -reporttypes:"MarkdownSummary;Cobertura"
+          } else {
+            "# Coverage report unavailable`n`nCoverlet did not produce a coverage XML file." | Out-File artifacts/coverage/Summary.md -Encoding utf8
+          }
 
       - name: Enforce 80 percent line and branch coverage
+        if: always()
         shell: pwsh
         run: |
-          $coverageFile = Get-ChildItem -Path artifacts/test-results -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1
+          $coverageFile = Get-ChildItem -Path artifacts/test-results -Filter coverage.cobertura.xml -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
           if ($null -eq $coverageFile) {
-            throw "Coverlet coverage XML was not generated."
+            "## Coverage gate`n`nCoverage XML was not generated." | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            exit 1
           }
-
           [xml]$coverage = Get-Content $coverageFile.FullName
           $lineRate = [double]$coverage.coverage.'line-rate' * 100
           $branchRate = [double]$coverage.coverage.'branch-rate' * 100
-
           @"
           ## Coverage gate
 
@@ -91,31 +92,36 @@ jobs:
           | --- | ---: | ---: |
           | Line coverage | $([math]::Round($lineRate, 2))% | 80% |
           | Branch coverage | $([math]::Round($branchRate, 2))% | 80% |
-          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-
+          "@ | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           if ($lineRate -lt 80 -or $branchRate -lt 80) {
-            @" 
-            ## Coverage threshold failed.
-
-            Required: line >= 80% and branch >= 80%.
-            Actual: **line $([math]::Round($lineRate, 2))%**, **branch $([math]::Round($branchRate, 2))%**.
-            @" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-            Write-Error "Coverage threshold failed. Required: line >= 80% and branch >= 80%. Actual: line $([math]::Round($lineRate, 2))%, branch $([math]::Round($branchRate, 2))%."
+            "## Coverage threshold failed`n`nRequired: line >= 80% and branch >= 80%. Actual: **line $([math]::Round($lineRate, 2))%**, **branch $([math]::Round($branchRate, 2))%**." | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            exit 1
           }
 
       - name: Append test execution report
+        if: always()
         shell: pwsh
         run: |
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "`n## Test execution report`n"
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```text'
-          Get-Content artifacts/test-output.txt | Add-Content -Path $env:GITHUB_STEP_SUMMARY
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```'
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "`n## Coverlet Markdown report`n"
-          Get-Content artifacts/coverage/Summary.md | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          Add-Content $env:GITHUB_STEP_SUMMARY "`n## Test execution report`n"
+          Add-Content $env:GITHUB_STEP_SUMMARY '```text'
+          if (Test-Path artifacts/test-output.txt) { Get-Content artifacts/test-output.txt | Add-Content $env:GITHUB_STEP_SUMMARY } else { Add-Content $env:GITHUB_STEP_SUMMARY 'Test output was not generated.' }
+          Add-Content $env:GITHUB_STEP_SUMMARY '```'
+          Add-Content $env:GITHUB_STEP_SUMMARY "`n## Coverlet Markdown report`n"
+          if (Test-Path artifacts/coverage/Summary.md) { Get-Content artifacts/coverage/Summary.md | Add-Content $env:GITHUB_STEP_SUMMARY } else { Add-Content $env:GITHUB_STEP_SUMMARY 'Coverage report was not generated.' }
 
       - name: Upload test and coverage reports
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: Continuous-Testing-Reports
           path: artifacts/
-          
+          if-no-files-found: warn
+
+      - name: Fail if tests failed
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path artifacts/test-exit-code.txt) {
+            $exitCode = [int](Get-Content artifacts/test-exit-code.txt -Raw).Replace('TEST_EXIT_CODE=', '').Trim()
+            if ($exitCode -ne 0) { Write-Error "dotnet test failed with exit code $exitCode." }
+          }
