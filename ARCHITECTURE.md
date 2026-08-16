@@ -85,7 +85,7 @@ The feature name should represent the aggregate/use-case boundary. `Common` is a
 - Use explicit `using` aliases in `GlobalUsings.cs` when namespaces expose ambiguous type names.
 - Prefer modern C#/.NET 10 language and BCL APIs when they improve correctness, clarity, performance, or maintainability.
 - Prefer async APIs for I/O-bound operations and propagate `CancellationToken` through application and infrastructure boundaries.
-- Avoid service-locator patterns and direct `IServiceProvider` resolution in application/domain code.
+- Avoid service-locator patterns and direct `IServiceProvider` resolution in application/domain code except for isolated infrastructure adapters whose responsibility is explicitly to bridge a third-party pipeline into the application abstraction.
 - Keep public APIs documented when they are part of a reusable abstraction or library boundary.
 - Do not introduce nullable suppression (`!`) without a concrete invariant that makes the value safe.
 
@@ -111,6 +111,16 @@ A handler should orchestrate a use case rather than become a persistence abstrac
 - Domain models must not depend on UI, persistence, HTTP, serialization, or framework-specific infrastructure.
 - Avoid anemic domain models when business invariants can naturally be expressed in the domain layer.
 - Domain events represent meaningful domain occurrences; application/infrastructure concerns subscribe through appropriate abstractions.
+
+## Testing and coverage
+
+- Every production feature must have unit tests in `tests/InvisibleSP.UnitTests` unless a documented architectural reason makes a unit test inappropriate.
+- Unit tests use xUnit v3, FluentAssertions, and `coverlet.collector`.
+- Tests must exercise both success and failure paths, including meaningful branch conditions.
+- The CI test job must collect line and branch coverage from Coverlet's XML output.
+- Minimum required coverage is **80% lines and 80% branches** for the code included in the coverage report.
+- Coverage thresholds are enforced by CI; a test run below either threshold fails the job.
+- Coverage reports must be rendered as Markdown and appended to the GitHub Actions job summary so the agent can inspect the measured line and branch percentages.
 
 ## Global build enforcement
 
