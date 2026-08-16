@@ -67,7 +67,7 @@ jobs:
         if: always()
         with:
           name: 'Continuous Test Results'
-          path: ${{ github.workspace }}/artifacts/test-results/*.trx
+          path: './artifacts/test-results/*.trx'
           reporter: 'dotnet-trx'
 
       - name: Generate coverage report
