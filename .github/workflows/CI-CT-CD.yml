@@ -45,17 +45,15 @@ jobs:
           dotnet-version: 10.0.*
 
       - name: Restore
-        working-directory: ${{ github.workspace }}/tests/InvisibleSP.UnitTests
-        run: dotnet restore InvisibleSP.UnitTests.csproj
+        run: dotnet restore ${{ github.workspace }}/tests/InvisibleSP.UnitTests/InvisibleSP.UnitTests.csproj
 
       - name: Install ReportGenerator
         run: dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.5.11
 
       - name: Test with Coverlet
-        shell: pwsh
-        working-directory: ${{ github.workspace }}/tests/InvisibleSP.UnitTests
+        shell: pwsh 
         run: |
-          dotnet test InvisibleSP.UnitTests.csproj `
+          dotnet test ${{ github.workspace }}/tests/InvisibleSP.UnitTests/InvisibleSP.UnitTests.csproj `
             --configuration Release `
             --no-restore `
             --collect:"XPlat Code Coverage" `
