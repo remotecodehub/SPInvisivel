@@ -86,8 +86,26 @@ The feature name should represent the aggregate/use-case boundary. `Common` is a
 - Prefer modern C#/.NET 10 language and BCL APIs when they improve correctness, clarity, performance, or maintainability.
 - Prefer async APIs for I/O-bound operations and propagate `CancellationToken` through application and infrastructure boundaries.
 - Avoid service-locator patterns and direct `IServiceProvider` resolution in application/domain code except for isolated infrastructure adapters whose responsibility is explicitly to bridge a third-party pipeline into the application abstraction.
-- Keep public APIs documented when they are part of a reusable abstraction or library boundary.
 - Do not introduce nullable suppression (`!`) without a concrete invariant that makes the value safe.
+
+## XML documentation
+
+Every public type and public member in every C# project, including test projects, must have XML documentation.
+
+Documentation is part of the public API contract and must contain, when applicable:
+
+- `<summary>` — what the type/member does and its responsibility.
+- `<typeparam>` — every generic type parameter.
+- `<param>` — every method, constructor, indexer, or delegate parameter.
+- `<returns>` — the returned value for methods/functions that return a value or task result.
+- `<exception>` — every exception that callers can reasonably encounter as part of the documented contract.
+- `<remarks>` — important invariants, lifecycle requirements, security considerations, side effects, threading behavior, or usage constraints that are not appropriate for the summary.
+
+Use `<inheritdoc />` when the inherited/interface documentation completely describes the public member and no additional contract information is necessary. Do not use empty documentation merely to silence an analyzer.
+
+XML documentation must describe the behavior of the implementation rather than restating the member name. Public API changes must update their documentation in the same change.
+
+The compiler XML documentation diagnostics are enabled in `.editorconfig`; malformed or incomplete parameter/type-parameter documentation must not be introduced.
 
 ## Dependency injection
 
@@ -124,8 +142,8 @@ A handler should orchestrate a use case rather than become a persistence abstrac
 
 ## Global build enforcement
 
-`Directory.Build.props` establishes the shared .NET 10 compiler/analyzer defaults for all projects beneath the repository root.
+`Directory.Build.props` establishes the shared .NET 10 compiler/analyzer defaults for all projects beneath the repository root and generates XML documentation files.
 
 `Directory.Build.targets` validates that every C# project has a root-level `GlobalUsings.cs` before compilation.
 
-The repository `.editorconfig` enforces file-scoped namespaces and centralized import conventions. Build-time analyzers are enabled so code-style and analyzer feedback is visible during builds.
+The repository `.editorconfig` enforces file-scoped namespaces, centralized import conventions, and XML documentation diagnostics for public APIs. Build-time analyzers are enabled so code-style and analyzer feedback is visible during builds.
