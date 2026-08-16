@@ -1,11 +1,13 @@
 namespace InvisibleSP.Composition;
-/// <summary>
-/// Provides extension methods for configuring the InvisibleSP application.
-/// </summary>
+
+/// <summary>Provides extension methods that compose InvisibleSP application services and HTTP middleware.</summary>
 public static class InvisibleSPCompositionExtensions
 {
     extension (WebApplicationBuilder builder)
     {
+        /// <summary>Registers all application, persistence, identity, validation, authentication, and authorization services.</summary>
+        /// <returns>The same application builder for fluent composition.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when required JWT configuration is missing or its secret key is too short.</exception>
         public WebApplicationBuilder AddInvisibleSP()
         {
             var services = builder.Services;
@@ -102,14 +104,11 @@ public static class InvisibleSPCompositionExtensions
         }
     }
 
-
     extension (WebApplication app)
     {
-        /// <summary>
-        /// Configures the InvisibleSP application with necessary middleware and routing.
-        /// </summary>
-        /// <typeparam name="TApp">An <see cref="IComponent"/> that is the App.razor of the application</typeparam>
-        /// <returns></returns>
+        /// <summary>Configures middleware, authentication, authorization, controllers, static assets, and Blazor endpoints.</summary>
+        /// <typeparam name="TApp">The Blazor root component used by the application.</typeparam>
+        /// <returns>The same web application for fluent startup composition.</returns>
         public WebApplication UseInvisibleSP<TApp>() where TApp : IComponent
         {
             if (!app.Environment.IsDevelopment())
