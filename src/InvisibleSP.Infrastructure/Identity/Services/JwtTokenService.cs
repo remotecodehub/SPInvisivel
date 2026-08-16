@@ -1,9 +1,13 @@
 namespace InvisibleSP.Infrastructure.Identity.Services;
 
+/// <summary>Creates and validates signed JWT access and refresh tokens.</summary>
+/// <param name="options">The configured JWT options.</param>
+/// <param name="revokedTokens">The store used to reject revoked tokens.</param>
 public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenStore revokedTokens) : IJwtTokenService
 {
     private readonly JwtOptions _options = options.Value;
 
+    /// <inheritdoc />
     public TokenResponse CreateTokens(string userId, string email, IEnumerable<string> roles, IEnumerable<Claim> claims)
     {
         var now = DateTimeOffset.UtcNow;
@@ -17,6 +21,7 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenS
             new JwtSecurityTokenHandler().WriteToken(refresh));
     }
 
+    /// <inheritdoc />
     public ClaimsPrincipal? ValidateToken(string token, bool validateLifetime = true)
     {
         if (string.IsNullOrWhiteSpace(token))
@@ -57,6 +62,7 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenS
         }
     }
 
+    /// <inheritdoc />
     public string? GetTokenId(string token)
     {
         try
@@ -69,6 +75,7 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenS
         }
     }
 
+    /// <inheritdoc />
     public DateTimeOffset? GetExpiration(string token)
     {
         try
@@ -125,10 +132,12 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenS
     }
 }
 
+/// <summary>Stores revoked token identifiers in process until their natural expiration.</summary>
 public sealed class RevokedTokenStore : IRevokedTokenStore
 {
     private readonly ConcurrentDictionary<string, DateTimeOffset> _tokens = new();
 
+    /// <inheritdoc />
     public bool IsRevoked(string tokenId)
     {
         if (!_tokens.TryGetValue(tokenId, out var expiresAt))
@@ -145,6 +154,7 @@ public sealed class RevokedTokenStore : IRevokedTokenStore
         return false;
     }
 
+    /// <inheritdoc />
     public void Revoke(string tokenId, DateTimeOffset expiresAt)
     {
         if (expiresAt > DateTimeOffset.UtcNow)
