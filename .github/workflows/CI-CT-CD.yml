@@ -66,7 +66,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifacts/coverage | Out-Null
-          $coverageFiles = @(Get-ChildItem -Path artifacts/test-results -Filter coverage.cobertura.xml -Recurse -ErrorAction SilentlyContinue)
+          $coverageFiles = @(Get-ChildItem -Path artifacts/test-results -Filter coverage.cobertura.xml -Recurse -File -ErrorAction SilentlyContinue)
           if ($coverageFiles.Count -gt 0) {
             reportgenerator -reports:"artifacts/test-results/**/coverage.cobertura.xml" -targetdir:"artifacts/coverage" -reporttypes:"MarkdownSummary;Cobertura"
           } else {
@@ -77,14 +77,20 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $coverageFile = Get-ChildItem -Path artifacts/test-results -Filter coverage.cobertura.xml -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($null -eq $coverageFile) {
-            "## Coverage gate`n`nCoverage XML was not generated." | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-            exit 1
+          $coverageFiles = @(Get-ChildItem -Path "$env:GITHUB_WORKSPACE/artifacts/test-results" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            Get-ChildItem -Path $_.FullName -Filter coverage.cobertura.xml -File -ErrorAction SilentlyContinue
+          })
+
+          if ($coverageFiles.Count -eq 0) {
+            "## Coverage gate`n`nNo Coverlet XML was found under the test-results GUID subdirectories." | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            return
           }
+
+          $coverageFile = $coverageFiles | Select-Object -First 1
           [xml]$coverage = Get-Content $coverageFile.FullName
           $lineRate = [double]$coverage.coverage.'line-rate' * 100
           $branchRate = [double]$coverage.coverage.'branch-rate' * 100
+
           @"
           ## Coverage gate
 
@@ -93,6 +99,7 @@ jobs:
           | Line coverage | $([math]::Round($lineRate, 2))% | 80% |
           | Branch coverage | $([math]::Round($branchRate, 2))% | 80% |
           "@ | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
           if ($lineRate -lt 80 -or $branchRate -lt 80) {
             "## Coverage threshold failed`n`nRequired: line >= 80% and branch >= 80%. Actual: **line $([math]::Round($lineRate, 2))%**, **branch $([math]::Round($branchRate, 2))%**." | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
             exit 1
