@@ -5,7 +5,6 @@ global using System.IdentityModel.Tokens.Jwt;
 global using System.Linq;
 global using System.Linq.Expressions;
 global using System.Security.Claims;
-global using System.Security.Cryptography;
 global using System.Text;
 global using System.Threading;
 global using System.Threading.Tasks;
