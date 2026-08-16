@@ -7,33 +7,25 @@ public sealed class IdentityServiceTests
     {
         await using var fixture = await IdentityFixture.CreateAsync();
         var service = fixture.Service;
-
         var before = await service.GetSetupStatusAsync(CancellationToken.None);
         before.IsSetupRequired.Should().BeTrue();
         before.IsSetupComplete.Should().BeFalse();
-
         var setup = await service.InitializeSetupAsync("admin@example.com", "Password1!", CancellationToken.None);
         setup.Succeeded.Should().BeTrue();
-
         var after = await service.GetSetupStatusAsync(CancellationToken.None);
         after.IsSetupRequired.Should().BeFalse();
         after.IsSetupComplete.Should().BeTrue();
-
         var duplicate = await service.InitializeSetupAsync("second@example.com", "Password1!", CancellationToken.None);
         duplicate.Succeeded.Should().BeFalse();
-
         var tokens = await service.LoginAsync("admin@example.com", "Password1!", null, null, CancellationToken.None);
         tokens.Should().NotBeNull();
-
         var principal = fixture.TokenService.ValidateToken(tokens!.AccessToken);
         principal.Should().NotBeNull();
         principal!.FindAll(ClaimTypes.Role).Select(x => x.Value).Should().Contain("Administrator");
         principal.FindAll(IdentityClaimTypes.Permission).Select(x => x.Value).Should().Contain("system.admin");
-
         var refreshed = await service.RefreshAsync(tokens.RefreshToken, CancellationToken.None);
         refreshed.Should().NotBeNull();
         fixture.TokenService.ValidateToken(tokens.RefreshToken).Should().BeNull();
-
         var revoked = await service.RevokeAsync(refreshed!.AccessToken, CancellationToken.None);
         revoked.Should().BeTrue();
         fixture.TokenService.ValidateToken(refreshed.AccessToken).Should().BeNull();
@@ -43,36 +35,21 @@ public sealed class IdentityServiceTests
     public async Task Registration_confirmation_and_password_reset_should_work()
     {
         await using var fixture = await IdentityFixture.CreateAsync();
-
         var registration = await fixture.Service.RegisterAsync("user@example.com", "Password1!", CancellationToken.None);
         registration.Succeeded.Should().BeTrue();
         fixture.EmailSender.ConfirmationLinks.Should().ContainSingle();
-
-        var confirmation = fixture.EmailSender.ConfirmationLinks.Single();
-        var confirmationQuery = ParseQuery(confirmation);
-        var confirmed = await fixture.Service.ConfirmEmailAsync(
-            confirmationQuery["userId"],
-            confirmationQuery["code"],
-            null,
-            CancellationToken.None);
+        var confirmationQuery = ParseQuery(fixture.EmailSender.ConfirmationLinks.Single());
+        var confirmed = await fixture.Service.ConfirmEmailAsync(confirmationQuery["userId"], confirmationQuery["code"], null, CancellationToken.None);
         confirmed.Should().BeTrue();
-
         var info = await fixture.Service.GetInfoAsync(confirmationQuery["userId"], CancellationToken.None);
         info.Should().NotBeNull();
         info!.IsEmailConfirmed.Should().BeTrue();
-
         var forgot = await fixture.Service.ForgotPasswordAsync("user@example.com", CancellationToken.None);
         forgot.Succeeded.Should().BeTrue();
         fixture.EmailSender.PasswordResetLinks.Should().ContainSingle();
-
         var resetQuery = ParseQuery(fixture.EmailSender.PasswordResetLinks.Single());
-        var reset = await fixture.Service.ResetPasswordAsync(
-            "user@example.com",
-            resetQuery["code"],
-            "Password2!",
-            CancellationToken.None);
+        var reset = await fixture.Service.ResetPasswordAsync("user@example.com", resetQuery["code"], "Password2!", CancellationToken.None);
         reset.Succeeded.Should().BeTrue();
-
         var login = await fixture.Service.LoginAsync("user@example.com", "Password2!", null, null, CancellationToken.None);
         login.Should().NotBeNull();
     }
@@ -82,17 +59,9 @@ public sealed class IdentityServiceTests
     {
         await using var fixture = await IdentityFixture.CreateAsync();
         await fixture.Service.InitializeSetupAsync("admin@example.com", "Password1!", CancellationToken.None);
-
         var user = await fixture.UserManager.FindByEmailAsync("admin@example.com");
         user.Should().NotBeNull();
-
-        var result = await fixture.Service.UpdateInfoAsync(
-            user!.Id,
-            "new-admin@example.com",
-            "Password2!",
-            "Password1!",
-            CancellationToken.None);
-
+        var result = await fixture.Service.UpdateInfoAsync(user!.Id, "new-admin@example.com", "Password2!", "Password1!", CancellationToken.None);
         result.Succeeded.Should().BeTrue();
         var login = await fixture.Service.LoginAsync("new-admin@example.com", "Password2!", null, null, CancellationToken.None);
         login.Should().NotBeNull();
@@ -127,8 +96,7 @@ internal sealed class IdentityFixture : IAsyncDisposable
         var emailSender = new CapturingEmailSender();
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<InvisibleIdentityDbContext>(options =>
-            options.UseInMemoryDatabase(Guid.NewGuid().ToString("N")));
+        services.AddDbContext<InvisibleIdentityDbContext>(options => options.UseInMemoryDatabase(Guid.NewGuid().ToString("N")));
         services.AddIdentityCore<IdentityUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;
@@ -140,7 +108,6 @@ internal sealed class IdentityFixture : IAsyncDisposable
             })
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<InvisibleIdentityDbContext>()
-            .AddSignInManager()
             .AddDefaultTokenProviders();
         services.Configure<JwtOptions>(options =>
         {
@@ -154,7 +121,6 @@ internal sealed class IdentityFixture : IAsyncDisposable
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IIdentityEmailSender>(emailSender);
         services.AddScoped<IdentityService>();
-
         var provider = services.BuildServiceProvider();
         await provider.GetRequiredService<InvisibleIdentityDbContext>().Database.EnsureCreatedAsync();
         return new IdentityFixture(provider, emailSender);
