@@ -1,0 +1,117 @@
+name: Stage 01 - Foundation
+
+on:
+  push:
+    branches:
+      - main
+      - feature/stage-01-foundation
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Restore
+        run: dotnet restore SPInvisivel.slnx
+
+      - name: Build
+        run: dotnet build SPInvisivel.slnx --configuration Release --no-restore
+
+  tests:
+    name: Tests and coverage
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Restore
+        run: dotnet restore tests/InvisibleSP.UnitTests/InvisibleSP.UnitTests.csproj
+
+      - name: Test with Coverlet
+        shell: pwsh
+        run: |
+          dotnet test tests/InvisibleSP.UnitTests/InvisibleSP.UnitTests.csproj `
+            --configuration Release `
+            --no-restore `
+            --collect:"XPlat Code Coverage" `
+            --results-directory artifacts/test-results `
+            --logger "trx;LogFileName=test-results.trx" 2>&1 | Tee-Object artifacts/test-output.txt
+
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+      - name: Install ReportGenerator
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.4.12
+
+      - name: Generate coverage report
+        shell: pwsh
+        run: |
+          reportgenerator `
+            -reports:"artifacts/test-results/**/coverage.cobertura.xml" `
+            -targetdir:"artifacts/coverage" `
+            -reporttypes:"MarkdownSummary;Cobertura"
+
+      - name: Enforce 80 percent line and branch coverage
+        shell: pwsh
+        run: |
+          $coverageFile = Get-ChildItem -Path artifacts/test-results -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1
+          if ($null -eq $coverageFile) {
+            throw "Coverlet coverage XML was not generated."
+          }
+
+          [xml]$coverage = Get-Content $coverageFile.FullName
+          $lineRate = [double]$coverage.coverage.'line-rate' * 100
+          $branchRate = [double]$coverage.coverage.'branch-rate' * 100
+
+          @"
+          ## Coverage gate
+
+          | Metric | Result | Minimum |
+          | --- | ---: | ---: |
+          | Line coverage | $([math]::Round($lineRate, 2))% | 80% |
+          | Branch coverage | $([math]::Round($branchRate, 2))% | 80% |
+          "@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+
+          if ($lineRate -lt 80 -or $branchRate -lt 80) {
+            throw "Coverage threshold failed. Required: line >= 80% and branch >= 80%. Actual: line $([math]::Round($lineRate, 2))%, branch $([math]::Round($branchRate, 2))%."
+          }
+
+      - name: Append test execution report
+        shell: pwsh
+        run: |
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "`n## Test execution report`n"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```text'
+          Get-Content artifacts/test-output.txt | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```'
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "`n## Coverlet Markdown report`n"
+          Get-Content artifacts/coverage/Summary.md | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload test and coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage-01-test-and-coverage-reports
+          path: artifacts/
+          if-no-files-found: error
