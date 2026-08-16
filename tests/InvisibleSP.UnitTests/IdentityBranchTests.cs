@@ -32,10 +32,22 @@ public sealed class IdentityBranchTests
         var user = await fixture.UserManager.FindByEmailAsync("admin@example.com");
         user.Should().NotBeNull();
 
-        await fixture.UserManager.ResetAuthenticatorKeyAsync(user!);
+        var twoFactorSetup = await fixture.Service.ConfigureTwoFactorAsync(
+            user!.Id,
+            null,
+            null,
+            false,
+            true,
+            false,
+            CancellationToken.None);
+        twoFactorSetup.Should().NotBeNull();
+        twoFactorSetup!.SharedKey.Should().NotBeNullOrWhiteSpace();
+
         var setupCode = await fixture.UserManager.GenerateTwoFactorTokenAsync(
             user,
             fixture.UserManager.Options.Tokens.AuthenticatorTokenProvider);
+        setupCode.Should().NotBeNullOrWhiteSpace();
+
         var configured = await fixture.Service.ConfigureTwoFactorAsync(
             user.Id,
             true,
