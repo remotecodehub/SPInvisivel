@@ -9,7 +9,7 @@ global using System.Threading.Tasks;
 global using FluentAssertions;
 global using FluentValidation;
 global using InvisibleSP.Application.Common.Identity;
-global using InvisibleSP.Application.Identity;
+global using InvisibleSP.Application.Identity; 
 global using InvisibleSP.Application.Identity.Handlers;
 global using InvisibleSP.Application.Identity.Requests;
 global using InvisibleSP.Application.Identity.Validators;

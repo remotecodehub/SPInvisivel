@@ -12,7 +12,7 @@ public sealed class SetupController(IMediator mediator) : ControllerBase
     [HttpGet("status")]
     [AllowAnonymous]
     public Task<SetupStatusResponse> GetStatus(CancellationToken cancellationToken) =>
-        mediator.RequestAsync<GetSetupStatusQuery, SetupStatusResponse>(new GetSetupStatusQuery());
+        mediator.RequestAsync<GetSetupStatusQuery, SetupStatusResponse>(new GetSetupStatusQuery(), cancellationToken);
 
     /// <summary>Initializes the application with its first administrator account.</summary>
     /// <param name="request">The initial administrator credentials.</param>
@@ -23,7 +23,7 @@ public sealed class SetupController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Initialize(InitializeSetupRequest request, CancellationToken cancellationToken)
     {
         var result = await mediator.RequestAsync<InitializeSetupCommand, IdentityResultResponse>(
-            new InitializeSetupCommand(request.Email, request.Password));
+            new InitializeSetupCommand(request.Email, request.Password), cancellationToken);
 
         return result.Succeeded ? Ok(result) : Conflict(result);
     }

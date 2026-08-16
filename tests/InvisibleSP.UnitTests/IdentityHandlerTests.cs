@@ -10,19 +10,19 @@ public sealed class IdentityHandlerTests
     {
         var service = new FakeIdentityService();
 
-        (await new RegisterCommandHandler(service).Handle(new ReceiveContext<RegisterCommand>(new("a@b.com", "Password1!")), CancellationToken.None)).Should().Be(IdentityResultResponse.Success());
-        (await new LoginCommandHandler(service).Handle(new ReceiveContext<LoginCommand>(new("a@b.com", "Password1!")), CancellationToken.None)).Succeeded.Should().BeTrue();
-        (await new RefreshTokenCommandHandler(service).Handle(new ReceiveContext<RefreshTokenCommand>(new("refresh")), CancellationToken.None)).Succeeded.Should().BeTrue();
-        (await new RevokeTokenCommandHandler(service).Handle(new ReceiveContext<RevokeTokenCommand>(new("access")), CancellationToken.None)).Data.Should().BeTrue();
-        (await new ConfirmEmailCommandHandler(service).Handle(new ReceiveContext<ConfirmEmailCommand>(new("id", "code")), CancellationToken.None)).Data.Should().BeTrue();
-        (await new ResendConfirmationEmailCommandHandler(service).Handle(new ReceiveContext<ResendConfirmationEmailCommand>(new("a@b.com")), CancellationToken.None)).Succeeded.Should().BeTrue();
-        (await new ForgotPasswordCommandHandler(service).Handle(new ReceiveContext<ForgotPasswordCommand>(new("a@b.com")), CancellationToken.None)).Succeeded.Should().BeTrue();
-        (await new ResetPasswordCommandHandler(service).Handle(new ReceiveContext<ResetPasswordCommand>(new("a@b.com", "code", "Password2!")), CancellationToken.None)).Succeeded.Should().BeTrue();
-        (await new GetIdentityInfoQueryHandler(service).Handle(new ReceiveContext<GetIdentityInfoQuery>(new("id")), CancellationToken.None)).Succeeded.Should().BeTrue();
-        (await new UpdateIdentityInfoCommandHandler(service).Handle(new ReceiveContext<UpdateIdentityInfoCommand>(new("id", null, null, "Password1!")), CancellationToken.None)).Succeeded.Should().BeTrue();
-        (await new ConfigureTwoFactorCommandHandler(service).Handle(new ReceiveContext<ConfigureTwoFactorCommand>(new("id", null, null, false, false, false)), CancellationToken.None)).Succeeded.Should().BeTrue();
-        (await new GetSetupStatusQueryHandler(service).Handle(new ReceiveContext<GetSetupStatusQuery>(new()), CancellationToken.None)).IsSetupComplete.Should().BeTrue();
-        (await new InitializeSetupCommandHandler(service).Handle(new ReceiveContext<InitializeSetupCommand>(new("a@b.com", "Password1!")), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<RegisterCommand>(new("a@b.com", "Password1!")), CancellationToken.None)).Should().Be(IdentityResultResponse.Success());
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<LoginCommand>(new("a@b.com", "Password1!")), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<RefreshTokenCommand>(new("refresh")), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<RevokeTokenCommand>(new("access")), CancellationToken.None)).Data.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<ConfirmEmailCommand>(new("id", "code")), CancellationToken.None)).Data.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<ResendConfirmationEmailCommand>(new("a@b.com")), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<ForgotPasswordCommand>(new("a@b.com")), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<ResetPasswordCommand>(new("a@b.com", "code", "Password2!")), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<GetIdentityInfoQuery>(new("id")), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<UpdateIdentityInfoCommand>(new("id", null, null, "Password1!")), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<ConfigureTwoFactorCommand>(new("id", null, null, false, false, false)), CancellationToken.None)).Succeeded.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<GetSetupStatusQuery>(new()), CancellationToken.None)).IsSetupComplete.Should().BeTrue();
+        (await new IdentityHandlers(service).Handle(new ReceiveContext<InitializeSetupCommand>(new("a@b.com", "Password1!")), CancellationToken.None)).Succeeded.Should().BeTrue();
     }
 
     private sealed class FakeIdentityService : IIdentityService

@@ -21,16 +21,15 @@ public sealed class FluentMessageValidator(IServiceProvider serviceProvider) : I
     {
         ArgumentNullException.ThrowIfNull(message);
 
-        var validatorType = typeof(IValidator<>).MakeGenericType(message.GetType());
-        var validator = serviceProvider.GetService(validatorType) as IValidator;
+        Type validatorType = typeof(IValidator<>).MakeGenericType(message.GetType());
 
-        if (validator is null)
+        if (serviceProvider.GetService(validatorType) is not IValidator validator)
         {
             return;
         }
 
         var context = new ValidationContext<object>(message);
-        var result = await validator.ValidateAsync(context, cancellationToken);
+        ValidationResult result = await validator.ValidateAsync(context, cancellationToken);
 
         if (!result.IsValid)
         {

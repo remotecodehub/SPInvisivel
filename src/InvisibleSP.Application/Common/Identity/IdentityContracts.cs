@@ -12,6 +12,10 @@ public static class IdentityPolicies
 {
     /// <summary>Gets the policy name required for administrator access.</summary>
     public const string Administrator = "administrator";
+    /// <summary>Gets the policy name required for manager access</summary>
+    public const string Manager = "manager";
+    /// <summary>Gets the policy name required for user access</summary>
+    public const string User = "user";
 }
 
 /// <summary>Contains token-type identifiers used by the JWT implementation.</summary>

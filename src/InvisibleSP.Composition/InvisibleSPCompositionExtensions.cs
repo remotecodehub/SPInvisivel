@@ -94,7 +94,7 @@ public static class InvisibleSPCompositionExtensions
                 .AddPolicy(IdentityPolicies.Administrator, policy =>
                     policy.RequireClaim(IdentityClaimTypes.Permission, AdministratorPermission));
             var mb = new Mediator.Net.MediatorBuilder();
-            mb.RegisterHandlers(typeof(RegisterCommandHandler).Assembly)
+            mb.RegisterHandlers(typeof(IdentityHandlers).Assembly)
                 .ConfigureCommandReceivePipe(pipe => pipe.UseValidation())
                 .ConfigureRequestPipe(pipe => pipe.UseValidation());
 
