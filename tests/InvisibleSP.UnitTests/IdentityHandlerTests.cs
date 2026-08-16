@@ -1,7 +1,10 @@
 namespace InvisibleSP.UnitTests;
 
+/// <summary>Verifies that identity handlers delegate requests to the identity application service.</summary>
 public sealed class IdentityHandlerTests
 {
+    /// <summary>Verifies that every identity handler forwards its request and returns the service result.</summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task All_identity_handlers_should_delegate_to_identity_service()
     {
