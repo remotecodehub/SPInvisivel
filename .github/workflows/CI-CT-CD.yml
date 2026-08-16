@@ -61,13 +61,12 @@ jobs:
           "dotnet test exit code: $exitCode" | Add-Content -Path $outputFile
           "TEST_EXIT_CODE=$exitCode" | Out-File -FilePath artifacts/test-exit-code.txt -Encoding utf8
 
-           - name: Publish Test Summary
-   
-      - uses: dorny/test-reporter@v1
+      - name: Publish Test Summary
+        uses: dorny/test-reporter@v1
         if: always()
         with:
           name: 'Continuous Test Results'
-          path: './artifacts/test-results/*.trx'
+          path: '$env:GITHUB_WORKSPACE/artifacts/test-results/*.trx'
           reporter: 'dotnet-trx'
 
       - name: Generate coverage report
