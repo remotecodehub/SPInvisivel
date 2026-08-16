@@ -1,5 +1,6 @@
 global using System;
 global using System.Collections.Generic;
+global using System.IdentityModel.Tokens.Jwt;
 global using System.Linq;
 global using System.Security.Claims;
 global using System.Text;
@@ -8,6 +9,8 @@ global using System.Threading.Tasks;
 global using FluentValidation;
 global using InvisibleSP.Application.Common.Identity;
 global using InvisibleSP.Application.Identity;
+global using InvisibleSP.Application.Identity.Handlers;
+global using InvisibleSP.Application.Identity.Validators;
 global using InvisibleSP.Application.Pipeline.Validation;
 global using InvisibleSP.Infrastructure.Identity;
 global using Mediator.Net;
