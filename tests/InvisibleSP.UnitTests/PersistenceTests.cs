@@ -1,7 +1,10 @@
 namespace InvisibleSP.UnitTests;
 
+/// <summary>Verifies Entity Framework Core persistence behavior for soft-deletable identity entities.</summary>
 public sealed class PersistenceTests
 {
+    /// <summary>Verifies that soft-deleted users are hidden by the configured query filter.</summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task Soft_deleted_users_should_be_hidden_by_query_filter()
     {
@@ -19,6 +22,8 @@ public sealed class PersistenceTests
         (await fixture.Context.Users.IgnoreQueryFilters().SingleAsync(x => x.Id == user.Id)).IsDeleted.Should().BeTrue();
     }
 
+    /// <summary>Verifies that asynchronous save operations apply the same soft-delete behavior.</summary>
+    /// <returns>A task representing the asynchronous test operation.</returns>
     [Fact]
     public async Task Async_soft_delete_should_apply_the_same_behavior()
     {
@@ -34,6 +39,7 @@ public sealed class PersistenceTests
         user.DeletedAt.Should().NotBeNull();
     }
 
+    /// <summary>Verifies that user and role constructors assign non-empty identity identifiers.</summary>
     [Fact]
     public void User_and_role_constructors_should_initialize_identity_ids()
     {
