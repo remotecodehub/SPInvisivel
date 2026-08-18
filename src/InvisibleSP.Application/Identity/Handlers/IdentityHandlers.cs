@@ -30,7 +30,7 @@ IRequestHandler<InitializeSetupCommand, IdentityResultResponse>
     /// <returns>The authentication response containing tokens when successful.</returns>
     public async Task<Response<TokenResponse>> Handle(IReceiveContext<LoginCommand> context, CancellationToken cancellationToken)
     {
-        var result = await identityService.LoginAsync(context.Message.Email, context.Message.Password, context.Message.TwoFactorCode, context.Message.TwoFactorRecoveryCode, cancellationToken);
+        TokenResponse? result = await identityService.LoginAsync(context.Message.Email, context.Message.Password, context.Message.TwoFactorCode, context.Message.TwoFactorRecoveryCode, cancellationToken);
         return result is null ? Response<TokenResponse>.Failure(["Invalid credentials."]) : Response<TokenResponse>.Success(result);
     }
     /// <summary>Executes a refresh-token exchange.</summary>
@@ -39,7 +39,7 @@ IRequestHandler<InitializeSetupCommand, IdentityResultResponse>
     /// <returns>The refreshed token response.</returns>
     public async Task<Response<TokenResponse>> Handle(IReceiveContext<RefreshTokenCommand> context, CancellationToken cancellationToken)
     {
-        var result = await identityService.RefreshAsync(context.Message.RefreshToken, cancellationToken);
+        TokenResponse? result = await identityService.RefreshAsync(context.Message.RefreshToken, cancellationToken);
         return result is null ? Response<TokenResponse>.Failure(["Invalid refresh token."]) : Response<TokenResponse>.Success(result);
     }
     /// <summary>Executes token revocation.</summary>
@@ -83,7 +83,7 @@ IRequestHandler<InitializeSetupCommand, IdentityResultResponse>
     /// <returns>The identity information response.</returns>
     public async Task<Response<IdentityInfoResponse>> Handle(IReceiveContext<GetIdentityInfoQuery> context, CancellationToken cancellationToken)
     {
-        var result = await identityService.GetInfoAsync(context.Message.UserId, cancellationToken);
+        IdentityInfoResponse? result = await identityService.GetInfoAsync(context.Message.UserId, cancellationToken);
         return result is null ? Response<IdentityInfoResponse>.Failure(["User not found."]) : Response<IdentityInfoResponse>.Success(result);
     }
 
@@ -100,7 +100,7 @@ IRequestHandler<InitializeSetupCommand, IdentityResultResponse>
     /// <returns>The resulting two-factor configuration.</returns>
     public async Task<Response<TwoFactorResponse>> Handle(IReceiveContext<ConfigureTwoFactorCommand> context, CancellationToken cancellationToken)
     {
-        var result = await identityService.ConfigureTwoFactorAsync(context.Message.UserId, context.Message.Enable, context.Message.TwoFactorCode, context.Message.ResetRecoveryCodes, context.Message.ResetSharedKey, context.Message.ForgetMachine, cancellationToken);
+        TwoFactorResponse? result = await identityService.ConfigureTwoFactorAsync(context.Message.UserId, context.Message.Enable, context.Message.TwoFactorCode, context.Message.ResetRecoveryCodes, context.Message.ResetSharedKey, context.Message.ForgetMachine, cancellationToken);
         return result is null ? Response<TwoFactorResponse>.Failure(["The two-factor configuration request is invalid."]) : Response<TwoFactorResponse>.Success(result);
     }
 

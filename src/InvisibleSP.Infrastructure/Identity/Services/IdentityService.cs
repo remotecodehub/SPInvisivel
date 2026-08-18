@@ -40,7 +40,7 @@ public sealed class IdentityService(
             EmailConfirmed = false
         };
 
-        var result = await userManager.CreateAsync(user, password);
+        IdentityResult result = await userManager.CreateAsync(user, password);
         if (!result.Succeeded)
         {
             return Failure(result);
@@ -71,13 +71,13 @@ public sealed class IdentityService(
         string? twoFactorRecoveryCode,
         CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByEmailAsync(email);
+        User? user = await userManager.FindByEmailAsync(email);
         if (user is null)
         {
             return null;
         }
 
-        var passwordResult = await signInManager.CheckPasswordSignInAsync(user, password, true);
+        SignInResult passwordResult = await signInManager.CheckPasswordSignInAsync(user, password, true);
         if (passwordResult.IsLockedOut || passwordResult.IsNotAllowed || !passwordResult.Succeeded)
         {
             return null;
@@ -110,7 +110,7 @@ public sealed class IdentityService(
     /// <returns>The new token pair, or <see langword="null"/> when the refresh token is invalid.</returns>
     public async Task<TokenResponse?> RefreshAsync(string refreshToken, CancellationToken cancellationToken)
     {
-        var principal = tokenService.ValidateToken(refreshToken);
+        ClaimsPrincipal? principal = tokenService.ValidateToken(refreshToken);
         if (principal is null || !string.Equals(principal.FindFirstValue("token_type"), JwtTokenTypes.Refresh, StringComparison.Ordinal))
         {
             return null;
@@ -127,15 +127,15 @@ public sealed class IdentityService(
             return null;
         }
 
-        var user = await userManager.FindByIdAsync(userId);
+        User? user = await userManager.FindByIdAsync(userId);
         if (user is null)
         {
             return null;
         }
 
         var tokenId = tokenService.GetTokenId(refreshToken);
-        var expiration = tokenService.GetExpiration(refreshToken);
-        var tokens = await CreateUserTokensAsync(user, cancellationToken);
+        DateTimeOffset? expiration = tokenService.GetExpiration(refreshToken);
+        TokenResponse tokens = await CreateUserTokensAsync(user, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(tokenId) && expiration.HasValue)
         {
@@ -153,9 +153,9 @@ public sealed class IdentityService(
     /// <returns><see langword="true"/> when the token was revoked; otherwise, <see langword="false"/>.</returns>
     public Task<bool> RevokeAsync(string accessToken, CancellationToken cancellationToken)
     {
-        var principal = tokenService.ValidateToken(accessToken);
+        ClaimsPrincipal? principal = tokenService.ValidateToken(accessToken);
         var tokenId = tokenService.GetTokenId(accessToken);
-        var expiration = tokenService.GetExpiration(accessToken);
+        DateTimeOffset? expiration = tokenService.GetExpiration(accessToken);
 
         if (principal is null || string.IsNullOrWhiteSpace(tokenId) || !expiration.HasValue)
         {
@@ -176,13 +176,13 @@ public sealed class IdentityService(
     /// <returns><see langword="true"/> when confirmation succeeds; otherwise, <see langword="false"/>.</returns>
     public async Task<bool> ConfirmEmailAsync(string userId, string code, string? changedEmail, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByIdAsync(userId);
+        User? user = await userManager.FindByIdAsync(userId);
         if (user is null)
         {
             return false;
         }
 
-        var result = !string.IsNullOrWhiteSpace(changedEmail)
+        IdentityResult result = !string.IsNullOrWhiteSpace(changedEmail)
             ? await userManager.ChangeEmailAsync(user, changedEmail, code)
             : await userManager.ConfirmEmailAsync(user, code);
 
@@ -197,7 +197,7 @@ public sealed class IdentityService(
     /// <returns>The result of the resend operation.</returns>
     public async Task<IdentityResultResponse> ResendConfirmationEmailAsync(string email, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByEmailAsync(email);
+        User? user = await userManager.FindByEmailAsync(email);
         if (user is null || await userManager.IsEmailConfirmedAsync(user))
         {
             return IdentityResultResponse.Success();
@@ -220,7 +220,7 @@ public sealed class IdentityService(
     /// <returns>A successful result whether or not a matching password-bearing user exists.</returns>
     public async Task<IdentityResultResponse> ForgotPasswordAsync(string email, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByEmailAsync(email);
+        User? user = await userManager.FindByEmailAsync(email);
         if (user is null || !await userManager.HasPasswordAsync(user))
         {
             return IdentityResultResponse.Success();
@@ -245,13 +245,13 @@ public sealed class IdentityService(
     /// <returns>The result of the password reset operation.</returns>
     public async Task<IdentityResultResponse> ResetPasswordAsync(string email, string resetCode, string newPassword, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByEmailAsync(email);
+        User? user = await userManager.FindByEmailAsync(email);
         if (user is null)
         {
             return IdentityResultResponse.Failure(["Invalid password reset request."]);
         }
 
-        var result = await userManager.ResetPasswordAsync(user, resetCode, newPassword);
+        IdentityResult result = await userManager.ResetPasswordAsync(user, resetCode, newPassword);
         return result.Succeeded ? IdentityResultResponse.Success() : Failure(result);
     }
 
@@ -263,7 +263,7 @@ public sealed class IdentityService(
     /// <returns>The user's identity information, or <see langword="null"/> when the user does not exist.</returns>
     public async Task<IdentityInfoResponse?> GetInfoAsync(string userId, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByIdAsync(userId);
+        User? user = await userManager.FindByIdAsync(userId);
         return user is null
             ? null
             : new IdentityInfoResponse(user.Email ?? string.Empty, await userManager.IsEmailConfirmedAsync(user));
@@ -280,7 +280,7 @@ public sealed class IdentityService(
     /// <returns>The result of the update operation.</returns>
     public async Task<IdentityResultResponse> UpdateInfoAsync(string userId, string? newEmail, string? newPassword, string oldPassword, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByIdAsync(userId);
+        User? user = await userManager.FindByIdAsync(userId);
         if (user is null || !await userManager.CheckPasswordAsync(user, oldPassword))
         {
             return IdentityResultResponse.Failure(["The current credentials are invalid."]);
@@ -289,7 +289,7 @@ public sealed class IdentityService(
         if (!string.IsNullOrWhiteSpace(newEmail) && !string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase))
         {
             var emailCode = await userManager.GenerateChangeEmailTokenAsync(user, newEmail);
-            var emailResult = await userManager.ChangeEmailAsync(user, newEmail, emailCode);
+            IdentityResult emailResult = await userManager.ChangeEmailAsync(user, newEmail, emailCode);
             if (!emailResult.Succeeded)
             {
                 return Failure(emailResult);
@@ -298,7 +298,7 @@ public sealed class IdentityService(
 
         if (!string.IsNullOrWhiteSpace(newPassword))
         {
-            var passwordResult = await userManager.ChangePasswordAsync(user, oldPassword, newPassword);
+            IdentityResult passwordResult = await userManager.ChangePasswordAsync(user, oldPassword, newPassword);
             if (!passwordResult.Succeeded)
             {
                 return Failure(passwordResult);
@@ -321,7 +321,7 @@ public sealed class IdentityService(
     /// <returns>The current two-factor configuration, or <see langword="null"/> when the user does not exist or an enable operation fails.</returns>
     public async Task<TwoFactorResponse?> ConfigureTwoFactorAsync(string userId, bool? enable, string? twoFactorCode, bool resetRecoveryCodes, bool resetSharedKey, bool forgetMachine, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByIdAsync(userId);
+        User? user = await userManager.FindByIdAsync(userId);
         if (user is null)
         {
             return null;
@@ -388,17 +388,17 @@ public sealed class IdentityService(
             return IdentityResultResponse.Failure(["The system setup has already been completed."]);
         }
 
-        var role = await roleManager.FindByNameAsync(AdministratorRole);
+        Role? role = await roleManager.FindByNameAsync(AdministratorRole);
         if (role is null)
         {
             role = new Role(AdministratorRole);
-            var roleResult = await roleManager.CreateAsync(role);
+            IdentityResult roleResult = await roleManager.CreateAsync(role);
             if (!roleResult.Succeeded)
             {
                 return Failure(roleResult);
             }
 
-            var claimResult = await roleManager.AddClaimAsync(role, new Claim(IdentityClaimTypes.Permission, AdministratorPermission));
+            IdentityResult claimResult = await roleManager.AddClaimAsync(role, new Claim(IdentityClaimTypes.Permission, AdministratorPermission));
             if (!claimResult.Succeeded)
             {
                 return Failure(claimResult);
@@ -411,13 +411,13 @@ public sealed class IdentityService(
             EmailConfirmed = true
         };
 
-        var userResult = await userManager.CreateAsync(user, password);
+        IdentityResult userResult = await userManager.CreateAsync(user, password);
         if (!userResult.Succeeded)
         {
             return Failure(userResult);
         }
 
-        var membershipResult = await userManager.AddToRoleAsync(user, AdministratorRole);
+        IdentityResult membershipResult = await userManager.AddToRoleAsync(user, AdministratorRole);
         if (!membershipResult.Succeeded)
         {
             return Failure(membershipResult);
@@ -429,12 +429,12 @@ public sealed class IdentityService(
 
     private async Task<TokenResponse> CreateUserTokensAsync(User user, CancellationToken cancellationToken)
     {
-        var roles = await userManager.GetRolesAsync(user);
-        var claims = await userManager.GetClaimsAsync(user);
+        IList<string> roles = await userManager.GetRolesAsync(user);
+        IList<Claim> claims = await userManager.GetClaimsAsync(user);
 
         foreach (var roleName in roles)
         {
-            var role = await roleManager.FindByNameAsync(roleName);
+            Role? role = await roleManager.FindByNameAsync(roleName);
             if (role is null)
             {
                 continue;

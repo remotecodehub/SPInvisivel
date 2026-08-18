@@ -22,7 +22,7 @@ public sealed class SetupController(IMediator mediator) : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Initialize(InitializeSetupRequest request, CancellationToken cancellationToken)
     {
-        var result = await mediator.RequestAsync<InitializeSetupCommand, IdentityResultResponse>(
+        IdentityResultResponse result = await mediator.RequestAsync<InitializeSetupCommand, IdentityResultResponse>(
             new InitializeSetupCommand(request.Email, request.Password), cancellationToken);
 
         return result.Succeeded ? Ok(result) : Conflict(result);

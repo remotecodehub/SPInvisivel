@@ -1,4 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <PackageReference Include="MudBlazor" Version="9.8.0" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\InvisibleSP.Application\InvisibleSP.Application.csproj" />
     <ProjectReference Include="..\InvisibleSP.Composition\InvisibleSP.Composition.csproj" />

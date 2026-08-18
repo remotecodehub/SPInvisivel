@@ -10,8 +10,8 @@ public static class InvisibleSPCompositionExtensions
         /// <exception cref="InvalidOperationException">Thrown when required JWT configuration is missing or its secret key is too short.</exception>
         public WebApplicationBuilder AddInvisibleSP()
         {
-            var services = builder.Services;
-            var configuration = builder.Configuration;
+            IServiceCollection services = builder.Services;
+            ConfigurationManager configuration = builder.Configuration;
 
             services.AddRazorComponents()
                 .AddInteractiveServerComponents();
@@ -48,7 +48,7 @@ public static class InvisibleSPCompositionExtensions
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
-                    var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
+                    JwtOptions jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
                         ?? throw new InvalidOperationException("JWT configuration is missing.");
 
                     if (Encoding.UTF8.GetByteCount(jwt.SecretKey) < 32)

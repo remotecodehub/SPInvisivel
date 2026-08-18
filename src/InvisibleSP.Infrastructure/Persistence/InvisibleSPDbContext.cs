@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace InvisibleSP.Infrastructure.Persistence;
 
@@ -13,16 +14,16 @@ public sealed class InvisibleSPDbContext(
     {
         base.OnModelCreating(builder);
 
-        foreach (var entityType in builder.Model.GetEntityTypes())
+        foreach (IMutableEntityType entityType in builder.Model.GetEntityTypes())
         {
             if (!typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
             {
                 continue;
             }
 
-            var parameter = Expression.Parameter(entityType.ClrType, "entity");
-            var property = Expression.Property(parameter, nameof(ISoftDeletable.IsDeleted));
-            var filter = Expression.Lambda(Expression.Not(property), parameter);
+            ParameterExpression parameter = Expression.Parameter(entityType.ClrType, "entity");
+            MemberExpression property = Expression.Property(parameter, nameof(ISoftDeletable.IsDeleted));
+            LambdaExpression filter = Expression.Lambda(Expression.Not(property), parameter);
             builder.Entity(entityType.ClrType).HasQueryFilter(filter);
         }
         builder.ApplyConfigurationsFromAssembly(typeof(InvisibleSPDbContext).Assembly);

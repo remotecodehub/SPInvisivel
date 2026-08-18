@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+
 namespace InvisibleSP.Controllers;
 
 /// <summary>Exposes HTTP endpoints for registration, authentication, account management, and two-factor authentication.</summary>
@@ -11,10 +13,12 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
     /// <returns>An HTTP response representing the registration result.</returns>
     [HttpPost("/register")]
     [AllowAnonymous]
+    [ProducesResponseType<IdentityResultResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<IdentityResultResponse>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
     {
-        var result = await mediator.RequestAsync<RegisterCommand, IdentityResultResponse>(new RegisterCommand(request.Email, request.Password));
-        return result.Succeeded ? Ok() : BadRequest(result);
+        IdentityResultResponse result = await mediator.RequestAsync<RegisterCommand, IdentityResultResponse>(new RegisterCommand(request.Email, request.Password), cancellationToken);
+        return result.Succeeded ? Created(HttpContext.Request.Path, result) : BadRequest(result);
     }
 
     /// <summary>Authenticates a user with a password and optional second factor.</summary>
@@ -25,8 +29,9 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
-        var result = await mediator.RequestAsync<LoginCommand, Response<TokenResponse>>(
-            new LoginCommand(request.Email, request.Password, request.TwoFactorCode, request.TwoFactorRecoveryCode));
+        Response<TokenResponse> result = await mediator.RequestAsync<LoginCommand, Response<TokenResponse>>(
+            new LoginCommand(request.Email, request.Password, request.TwoFactorCode, request.TwoFactorRecoveryCode),
+             cancellationToken);
         return result.Succeeded ? Ok(result.Data) : Unauthorized(result);
     }
 
@@ -38,7 +43,7 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Refresh(RefreshRequest request, CancellationToken cancellationToken)
     {
-        var result = await mediator.RequestAsync<RefreshTokenCommand, Response<TokenResponse>>(new RefreshTokenCommand(request.RefreshToken));
+        Response<TokenResponse> result = await mediator.RequestAsync<RefreshTokenCommand, Response<TokenResponse>>(new RefreshTokenCommand(request.RefreshToken));
         return result.Succeeded ? Ok(result.Data) : Unauthorized(result);
     }
 
@@ -50,7 +55,7 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> Revoke(CancellationToken cancellationToken)
     {
         var accessToken = Request.Headers.Authorization.ToString().Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase);
-        var result = await mediator.RequestAsync<RevokeTokenCommand, Response<bool>>(new RevokeTokenCommand(accessToken));
+        Response<bool> result = await mediator.RequestAsync<RevokeTokenCommand, Response<bool>>(new RevokeTokenCommand(accessToken));
         return result.Data == true ? Ok() : Unauthorized(result);
     }
 
@@ -64,7 +69,7 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string code, [FromQuery] string? changedEmail, CancellationToken cancellationToken)
     {
-        var result = await mediator.RequestAsync<ConfirmEmailCommand, Response<bool>>(new ConfirmEmailCommand(userId, code, changedEmail));
+        Response<bool> result = await mediator.RequestAsync<ConfirmEmailCommand, Response<bool>>(new ConfirmEmailCommand(userId, code, changedEmail));
         return result.Data == true ? Ok("Thank you for confirming your email.") : BadRequest(result);
     }
 
@@ -76,7 +81,7 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ResendConfirmationEmail(EmailRequest request, CancellationToken cancellationToken)
     {
-        var result = await mediator.RequestAsync<ResendConfirmationEmailCommand, IdentityResultResponse>(new ResendConfirmationEmailCommand(request.Email));
+        IdentityResultResponse result = await mediator.RequestAsync<ResendConfirmationEmailCommand, IdentityResultResponse>(new ResendConfirmationEmailCommand(request.Email));
         return result.Succeeded ? Ok() : BadRequest(result);
     }
 
@@ -88,7 +93,7 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword(EmailRequest request, CancellationToken cancellationToken)
     {
-        var result = await mediator.RequestAsync<ForgotPasswordCommand, IdentityResultResponse>(new ForgotPasswordCommand(request.Email));
+        IdentityResultResponse result = await mediator.RequestAsync<ForgotPasswordCommand, IdentityResultResponse>(new ForgotPasswordCommand(request.Email));
         return result.Succeeded ? Ok() : BadRequest(result);
     }
 
@@ -100,7 +105,7 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ResetPassword(ResetPasswordRequest request, CancellationToken cancellationToken)
     {
-        var result = await mediator.RequestAsync<ResetPasswordCommand, IdentityResultResponse>(new ResetPasswordCommand(request.Email, request.ResetCode, request.NewPassword));
+        IdentityResultResponse result = await mediator.RequestAsync<ResetPasswordCommand, IdentityResultResponse>(new ResetPasswordCommand(request.Email, request.ResetCode, request.NewPassword));
         return result.Succeeded ? Ok() : BadRequest(result);
     }
 
@@ -117,7 +122,7 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
             return Unauthorized();
         }
 
-        var result = await mediator.RequestAsync<GetIdentityInfoQuery, Response<IdentityInfoResponse>>(new GetIdentityInfoQuery(userId));
+        Response<IdentityInfoResponse> result = await mediator.RequestAsync<GetIdentityInfoQuery, Response<IdentityInfoResponse>>(new GetIdentityInfoQuery(userId));
         return result.Succeeded ? Ok(result.Data) : NotFound(result);
     }
 
@@ -135,7 +140,7 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
             return Unauthorized();
         }
 
-        var result = await mediator.RequestAsync<UpdateIdentityInfoCommand, IdentityResultResponse>(
+        IdentityResultResponse result = await mediator.RequestAsync<UpdateIdentityInfoCommand, IdentityResultResponse>(
             new UpdateIdentityInfoCommand(userId, request.NewEmail, request.NewPassword, request.OldPassword));
         return result.Succeeded ? Ok() : BadRequest(result);
     }
@@ -154,7 +159,7 @@ public sealed class IdentityController(IMediator mediator) : ControllerBase
             return Unauthorized();
         }
 
-        var result = await mediator.RequestAsync<ConfigureTwoFactorCommand, Response<TwoFactorResponse>>(
+        Response<TwoFactorResponse> result = await mediator.RequestAsync<ConfigureTwoFactorCommand, Response<TwoFactorResponse>>(
             new ConfigureTwoFactorCommand(userId, request.Enable, request.TwoFactorCode, request.ResetRecoveryCodes, request.ResetSharedKey, request.ForgetMachine));
         return result.Succeeded ? Ok(result.Data) : BadRequest(result);
     }

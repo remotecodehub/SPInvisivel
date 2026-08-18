@@ -10,9 +10,9 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenS
     /// <inheritdoc />
     public TokenResponse CreateTokens(string userId, string email, IEnumerable<string> roles, IEnumerable<Claim> claims)
     {
-        var now = DateTimeOffset.UtcNow;
-        var access = CreateToken(userId, email, roles, claims, JwtTokenTypes.Access, now, _options.AccessTokenLifetime);
-        var refresh = CreateToken(userId, email, roles, Array.Empty<Claim>(), JwtTokenTypes.Refresh, now, _options.RefreshTokenLifetime);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        JwtSecurityToken access = CreateToken(userId, email, roles, claims, JwtTokenTypes.Access, now, _options.AccessTokenLifetime);
+        JwtSecurityToken refresh = CreateToken(userId, email, roles, Array.Empty<Claim>(), JwtTokenTypes.Refresh, now, _options.RefreshTokenLifetime);
 
         return new TokenResponse(
             "Bearer",
@@ -43,7 +43,7 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenS
 
         try
         {
-            var principal = new JwtSecurityTokenHandler().ValidateToken(token, parameters, out var validatedToken);
+            ClaimsPrincipal principal = new JwtSecurityTokenHandler().ValidateToken(token, parameters, out SecurityToken? validatedToken);
             var tokenId = validatedToken.Id;
             if (!string.IsNullOrWhiteSpace(tokenId) && revokedTokens.IsRevoked(tokenId))
             {
@@ -80,7 +80,7 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options, IRevokedTokenS
     {
         try
         {
-            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+            JwtSecurityToken jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
             return jwt.ValidTo == DateTime.MinValue ? null : new DateTimeOffset(jwt.ValidTo, TimeSpan.Zero);
         }
         catch (ArgumentException)
@@ -140,7 +140,7 @@ public sealed class RevokedTokenStore : IRevokedTokenStore
     /// <inheritdoc />
     public bool IsRevoked(string tokenId)
     {
-        if (!_tokens.TryGetValue(tokenId, out var expiresAt))
+        if (!_tokens.TryGetValue(tokenId, out DateTimeOffset expiresAt))
         {
             return false;
         }
